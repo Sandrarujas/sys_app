@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   bio TEXT,
   profile_image VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  role ENUM('user', 'admin') DEFAULT 'user'
 );
 
 -- Tabla de publicaciones
