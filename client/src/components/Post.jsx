@@ -1,121 +1,280 @@
 "use client"
 
-import { useState, useEffect, useContext } from "react"
+import { useState, useContext } from "react"
+import { Link } from "react-router-dom"
 import axios from "axios"
-import { useAuth } from "../context/AuthContext"
 import { AuthContext } from "../context/AuthContext"
-import Post from "../components/Post"
-import styles from "../styles/Home.module.css" // ⬅️ Importamos el módulo CSS
+import CommentList from "./CommentList"
+import EditPostModal from "./EditPostModal"
+import styles from "../styles/Post.module.css" 
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000"  // Pon URL por defecto
+const BASE_URL = process.env.REACT_APP_API_URL;
 
-const Home = () => {
-  const { updatePost, deletePost: deletePostFromContext } = useContext(AuthContext)
-  const { user } = useAuth()
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [page, setPage] = useState(1)
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 5,
-    total: 0,
-    totalPages: 0,
-  })
+const Post = ({ post, onPostUpdate, onPostDelete }) => {
+  // ✅ Usar AuthContext para todo
+  const {
+    user,
+    updatePost,
+    deletePost: deletePostFromContext,
+    updatePostLikes,
+    updatePostComments,
+  } = useContext(AuthContext)
 
-  useEffect(() => {
-    const fetchPosts = async () => {
+  const [likes, setLikes] = useState(post.likes || 0)
+  const [liked, setLiked] = useState(post.liked || false)
+  const [showComments, setShowComments] = useState(false)
+  const [commentText, setCommentText] = useState("")
+  const [comments, setComments] = useState(post.comments || [])
+  const [commentCount, setCommentCount] = useState(post.commentCount || post.comments?.length || 0)
+  const [loadingComments, setLoadingComments] = useState(false)
+  const [allCommentsLoaded, setAllCommentsLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showOptions, setShowOptions] = useState(false)
+
+  const isOwner = user && post.user && user.id === post.user.id
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith("http")) return imagePath
+    return `${imagePath}`
+  }
+
+  const handleLike = async () => {
+    try {
+      await axios.post(`${BASE_URL}/api/posts/${post.id}/like`)
+      const newLiked = !liked
+      const newLikes = liked ? likes - 1 : likes + 1
+
+      // ✅ Actualizar estado local inmediatamente
+      setLiked(newLiked)
+      setLikes(newLikes)
+
+      // ✅ Actualizar contexto global
+      updatePostLikes(post.id, newLiked, newLikes)
+    } catch (error) {
+      console.error("Error liking post:", error)
+      // Revertir cambios en caso de error
+      setLiked(liked)
+      setLikes(likes)
+    }
+  }
+
+  const handleComment = async (e) => {
+    e.preventDefault()
+    if (!commentText.trim()) return
+
+    try {
+      const res = await axios.post(`${BASE_URL}/api/posts/${post.id}/comment`, {
+        content: commentText,
+      })
+
+      const newCommentCount = commentCount + 1
+
+      // ✅ Actualizar estado local
+      setComments([res.data, ...comments])
+      setCommentCount(newCommentCount)
+      setCommentText("")
+
+      // ✅ Actualizar contexto global
+      updatePostComments(post.id, newCommentCount)
+    } catch (error) {
+      console.error("Error commenting on post:", error)
+    }
+  }
+
+  const toggleComments = async () => {
+    setShowComments(!showComments)
+
+    if (showComments) return
+
+    if (comments.length === 0 && !showComments) {
       try {
-        setLoading(true)
-        console.log("BASE_URL:", BASE_URL)
-        const res = await axios.get(`${BASE_URL}/api/posts?page=${page}&limit=5`)
-        console.log("API response data:", res.data)
-        setPosts(res.data.posts || [])
-        setPagination(res.data.pagination || {
-          page: 1,
-          limit: 5,
-          total: 0,
-          totalPages: 0,
-        })
-        setLoading(false)
+        setLoadingComments(true)
+        const res = await axios.get(`${BASE_URL}/api/posts/${post.id}/comments?limit=5`)
+        setComments(res.data.comments)
+        setAllCommentsLoaded(res.data.comments.length >= res.data.pagination.total)
+        setLoadingComments(false)
       } catch (error) {
-        console.error("Error fetching posts:", error)
-        setError("Error al cargar las publicaciones")
-        setLoading(false)
+        console.error("Error loading comments:", error)
+        setLoadingComments(false)
       }
     }
+  }
 
-    fetchPosts()
-  }, [page])
+  const loadMoreComments = async () => {
+    try {
+      setLoadingComments(true)
+      const page = Math.floor(comments.length / 5) + 1
+      const res = await axios.get(`${BASE_URL}/api/posts/${post.id}/comments?page=${page}&limit=5`)
+
+      setComments([...comments, ...res.data.comments])
+      setAllCommentsLoaded(comments.length + res.data.comments.length >= res.data.pagination.total)
+      setLoadingComments(false)
+    } catch (error) {
+      console.error("Error loading more comments:", error)
+      setLoadingComments(false)
+    }
+  }
+
+  const handleImageError = () => {
+    console.error("Error al cargar la imagen:", post.image)
+    setImageError(true)
+  }
+
+  const handleEditPost = () => {
+    setIsEditModalOpen(true)
+    setShowOptions(false)
+  }
+
+  const handleDeletePost = async () => {
+    if (window.confirm("¿Estás seguro de que quieres eliminar esta publicación?")) {
+      try {
+        setIsDeleting(true)
+        await axios.delete(`${BASE_URL}/api/posts/${post.id}`)
+
+        // ✅ Actualizar contexto global inmediatamente
+        deletePostFromContext(post.id)
+
+        // ✅ Notificar al componente padre
+        if (onPostDelete) {
+          onPostDelete(post.id)
+        }
+      } catch (error) {
+        console.error("Error al eliminar publicación:", error)
+        alert("Error al eliminar la publicación")
+      } finally {
+        setIsDeleting(false)
+      }
+    }
+  }
 
   const handlePostUpdate = (updatedPost) => {
-    setPosts((prevPosts) => prevPosts.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post)))
-    updatePost(updatedPost.id, updatedPost)
-  }
+    // ✅ Actualizar estado local
+    setImageError(false)
 
-  const handlePostDelete = (postId) => {
-    setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId))
-    deletePostFromContext(postId)
-    setPagination((prev) => ({
-      ...prev,
-      total: prev.total - 1,
-    }))
-  }
+    // ✅ Actualizar contexto global
+    updatePost(post.id, updatedPost)
 
-  const handlePrevPage = () => {
-    if (page > 1) {
-      setPage(page - 1)
+    // ✅ Notificar al componente padre
+    if (onPostUpdate) {
+      onPostUpdate(updatedPost)
     }
   }
 
-  const handleNextPage = () => {
-    if (page < pagination.totalPages) {
-      setPage(page + 1)
-    }
-  }
-
-  if (loading && page === 1) {
-    return <div className={styles.loading}>Cargando publicaciones...</div>
-  }
-
-  if (error) {
-    return <div className={styles.error}>{error}</div>
+  const toggleOptions = () => {
+    setShowOptions(!showOptions)
   }
 
   return (
-    <div className={styles["home-container"]}>
-      <h1>
-        <p>Bienvenido, {user?.username}</p>¿Que hay de nuevo?
-      </h1>
-      <div className={styles["posts-container"]}>
-        {Array.isArray(posts) && posts.length > 0 ? (
-          posts.map((post) => (
-            <Post key={post.id} post={post} onPostUpdate={handlePostUpdate} onPostDelete={handlePostDelete} />
-          ))
-        ) : (
-          <p>No hay publicaciones disponibles. ¡Sigue a más usuarios o crea tu primera publicación!</p>
+    <div className={styles.post}>
+      <div className={styles["post-header"]}>
+        <Link to={`/profile/${post.user.username}`} className={styles["post-user"]}>
+          <img
+            src={getImageUrl(post.user.profileImage) || "/placeholder.svg?height=40&width=40"}
+            alt={post.user.username}
+            className={styles["post-user-image"]}
+            onError={(e) => {
+              e.target.src = "/placeholder.svg?height=40&width=40"
+            }}
+          />
+          <span className={styles["post-username"]}>{post.user.username}</span>
+        </Link>
+        <div className={styles["post-header-right"]}>
+          <span className={styles["post-date"]}>{new Date(post.createdAt).toLocaleDateString()}</span>
+
+          {isOwner && (
+            <div className={styles["post-options"]}>
+              <button className={styles["post-options-button"]} onClick={toggleOptions}>
+                ⋮
+              </button>
+              {showOptions && (
+                <div className={styles["post-options-menu"]}>
+                  <button onClick={handleEditPost} disabled={isDeleting}>
+                    Editar
+                  </button>
+                  <button onClick={handleDeletePost} disabled={isDeleting}>
+                    {isDeleting ? "Eliminando..." : "Eliminar"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className={styles["post-content"]}>
+        <p>{post.content}</p>
+        {post.image && !imageError && (
+          <div className={styles["post-image-container"]}>
+            <img
+              src={getImageUrl(post.image) || "/placeholder.svg"}
+              alt="Post"
+              className={styles["post-image"]}
+              onError={handleImageError}
+            />
+          </div>
+        )}
+        {imageError && (
+          <div className={styles["post-image-error"]}>
+            <p>No se pudo cargar la imagen</p>
+            <p className={styles["post-image-path"]}>Ruta: {post.image}</p>
+          </div>
         )}
       </div>
+      <div className={styles["post-actions"]}>
+        <button className={`${styles["post-like-button"]} ${liked ? styles.liked : ""}`} onClick={handleLike}>
+          {liked ? "❤️" : "🤍"} {likes}
+        </button>
+        <button className={styles["post-comment-button"]} onClick={toggleComments}>
+          💬 {commentCount}
+        </button>
+      </div>
+      {showComments && (
+        <div className={styles["post-comments"]}>
+          <form onSubmit={handleComment} className={styles["comment-form"]}>
+            <input
+              type="text"
+              placeholder="Escribe un comentario..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              className={styles["comment-input"]}
+            />
+            <button type="submit" className={styles["comment-submit"]}>
+              Enviar
+            </button>
+          </form>
 
-      {pagination.totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button className={styles["pagination-button"]} onClick={handlePrevPage} disabled={page === 1 || loading}>
-            Anterior
-          </button>
-          <div className={styles["pagination-info"]}>
-            Página {page} de {pagination.totalPages}
-          </div>
-          <button
-            className={styles["pagination-button"]}
-            onClick={handleNextPage}
-            disabled={page === pagination.totalPages || loading}
-          >
-            Siguiente
-          </button>
+          {loadingComments && comments.length === 0 ? (
+            <div className={styles.loading}>Cargando comentarios...</div>
+          ) : (
+            <>
+              <CommentList comments={comments} />
+
+              {!allCommentsLoaded && commentCount > comments.length && (
+                <div className={styles["view-all-comments"]}>
+                  <button className={styles["view-all-comments-button"]} onClick={loadMoreComments} disabled={loadingComments}>
+                    {loadingComments
+                      ? "Cargando..."
+                      : `Ver más comentarios (${commentCount - comments.length} restantes)`}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
+      )}
+
+      {isEditModalOpen && (
+        <EditPostModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          post={post}
+          onPostUpdate={handlePostUpdate}
+        />
       )}
     </div>
   )
 }
 
-export default Home
+export default Post
