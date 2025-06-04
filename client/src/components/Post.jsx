@@ -8,6 +8,8 @@ import CommentList from "./CommentList"
 import EditPostModal from "./EditPostModal"
 import styles from "../styles/Post.module.css" 
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const Post = ({ post, onPostUpdate, onPostDelete }) => {
   // ✅ Usar AuthContext para todo
   const {
@@ -36,12 +38,12 @@ const Post = ({ post, onPostUpdate, onPostDelete }) => {
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null
     if (imagePath.startsWith("http")) return imagePath
-    return `http://localhost:5000${imagePath}`
+    return `${imagePath}`
   }
 
   const handleLike = async () => {
     try {
-      await axios.post(`http://localhost:5000/api/posts/${post.id}/like`)
+      await axios.post(`${BASE_URL}/api/posts/${post.id}/like`)
       const newLiked = !liked
       const newLikes = liked ? likes - 1 : likes + 1
 
@@ -64,7 +66,7 @@ const Post = ({ post, onPostUpdate, onPostDelete }) => {
     if (!commentText.trim()) return
 
     try {
-      const res = await axios.post(`http://localhost:5000/api/posts/${post.id}/comment`, {
+      const res = await axios.post(`${BASE_URL}/api/posts/${post.id}/comment`, {
         content: commentText,
       })
 
@@ -90,7 +92,7 @@ const Post = ({ post, onPostUpdate, onPostDelete }) => {
     if (comments.length === 0 && !showComments) {
       try {
         setLoadingComments(true)
-        const res = await axios.get(`http://localhost:5000/api/posts/${post.id}/comments?limit=5`)
+        const res = await axios.get(`${BASE_URL}/api/posts/${post.id}/comments?limit=5`)
         setComments(res.data.comments)
         setAllCommentsLoaded(res.data.comments.length >= res.data.pagination.total)
         setLoadingComments(false)
@@ -105,7 +107,7 @@ const Post = ({ post, onPostUpdate, onPostDelete }) => {
     try {
       setLoadingComments(true)
       const page = Math.floor(comments.length / 5) + 1
-      const res = await axios.get(`http://localhost:5000/api/posts/${post.id}/comments?page=${page}&limit=5`)
+      const res = await axios.get(`${BASE_URL}/api/posts/${post.id}/comments?page=${page}&limit=5`)
 
       setComments([...comments, ...res.data.comments])
       setAllCommentsLoaded(comments.length + res.data.comments.length >= res.data.pagination.total)
@@ -130,7 +132,7 @@ const Post = ({ post, onPostUpdate, onPostDelete }) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar esta publicación?")) {
       try {
         setIsDeleting(true)
-        await axios.delete(`http://localhost:5000/api/posts/${post.id}`)
+        await axios.delete(`${BASE_URL}/api/posts/${post.id}`)
 
         // ✅ Actualizar contexto global inmediatamente
         deletePostFromContext(post.id)

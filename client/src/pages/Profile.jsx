@@ -9,7 +9,7 @@ import EditProfileModal from "../components/EditProfileModal";
 
 import styles from "../styles/Profile.module.css";
 
-const BASE_URL = "https://tu-app.railway.app"; // Asegúrate de que esta URL está correctamente configurada
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 const Profile = () => {
   const { username } = useParams();

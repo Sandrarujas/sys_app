@@ -6,6 +6,8 @@ import axios from "axios"
 import Post from "../components/Post"
 import styles from "../styles/Post.module.css"
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const SinglePost = () => {
   const { id } = useParams()
   const [post, setPost] = useState(null)
@@ -17,7 +19,7 @@ const SinglePost = () => {
     const fetchPost = async () => {
       try {
         setLoading(true)
-        const res = await axios.get(`/api/posts/${id}`)
+        const res = await axios.get(`${BASE_URL}/api/posts/${id}`)
         setPost(res.data)
         setLoading(false)
       } catch (error) {

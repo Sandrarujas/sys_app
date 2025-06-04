@@ -1,5 +1,8 @@
 // client/src/components/Avatar.jsx
 import { useState } from 'react';
+const BASE_URL = process.env.REACT_APP_API_URL;$
+
+
 
 const Avatar = ({ src, username, size = 40, version = "" }) => {
   const [error, setError] = useState(false);
@@ -9,7 +12,7 @@ const Avatar = ({ src, username, size = 40, version = "" }) => {
 
     const baseUrl = imagePath.startsWith("http")
       ? imagePath
-      : `${imagePath}`;
+      : `${BASE_URL}${imagePath}`;
 
     return version ? `${baseUrl}?v=${version}` : baseUrl;
   };

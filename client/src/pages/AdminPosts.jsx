@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react"
 import styles from "../styles/Admin.module.css"
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const AdminPosts = () => {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -16,7 +18,7 @@ const AdminPosts = () => {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/users/id/${userId}`, {
+      const response = await fetch(`http://{BASE_URL}/api/users/id/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -40,7 +42,7 @@ const AdminPosts = () => {
   const fetchPosts = useCallback(async (page = 1) => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/admin/posts?page=${page}&limit=10`, {
+      const response = await fetch(`{BASE_URL}/api/admin/posts?page=${page}&limit=10`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -78,7 +80,7 @@ const AdminPosts = () => {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/admin/posts/${postId}`, {
+      const response = await fetch(`{BASE_URL}/api/admin/posts/${postId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -152,7 +154,7 @@ const AdminPosts = () => {
                   {post.image && (
                     <div className={styles["post-image"]}>
                       <img
-                        src={`${post.image}`}
+                        src={`http://localhost:5000${post.image}`}
                         alt="Post"
                         style={{ maxWidth: "200px", maxHeight: "200px" }}
                       />

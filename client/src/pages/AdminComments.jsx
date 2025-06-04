@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react"
 import styles from "../styles/Admin.module.css"
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const AdminComments = () => {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -16,7 +18,7 @@ const AdminComments = () => {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/users/id/${userId}`, {
+      const response = await fetch(`{BASE_URL}/api/users/id/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
@@ -38,7 +40,7 @@ const AdminComments = () => {
   const fetchComments = useCallback(async (page = 1) => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/admin/comments?page=${page}&limit=10`, {
+      const response = await fetch(`{BASE_URL}/api/admin/comments?page=${page}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
@@ -73,7 +75,7 @@ const AdminComments = () => {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/admin/comments/${commentId}`, {
+      const response = await fetch(`{BASE_URL}/api/admin/comments/${commentId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       })

@@ -5,7 +5,7 @@ import axios from "axios"
 import styles from "../styles/EditProfileModal.module.css"
 
 
-const BASE_URL = "http://localhost:5000"
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
   const [bio, setBio] = useState("")

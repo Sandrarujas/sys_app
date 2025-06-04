@@ -7,6 +7,7 @@ import { AuthContext } from "../context/AuthContext"
 import Post from "../components/Post"
 import styles from "../styles/Home.module.css" // ⬅️ Importamos el módulo CSS
 
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 const Home = () => {
   const { updatePost, deletePost: deletePostFromContext } = useContext(AuthContext)
@@ -26,7 +27,7 @@ const Home = () => {
     const fetchPosts = async () => {
       try {
         setLoading(true)
-        const res = await axios.get(`/api/posts?page=${page}&limit=5`)
+        const res = await axios.get(`{BASE_URL}/api/posts?page=${page}&limit=5`)
         setPosts(res.data.posts)
         setPagination(res.data.pagination)
         setLoading(false)

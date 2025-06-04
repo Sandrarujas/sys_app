@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import styles from "../styles/Admin.module.css"
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const AdminUsers = () => {
   const { isAdmin } = useAuth()
   const [users, setUsers] = useState([])
@@ -19,7 +21,7 @@ const AdminUsers = () => {
   const fetchUsers = async (page = 1) => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/admin/users?page=${page}&limit=10`, {
+      const response = await fetch(`{BASE_URL}/api/admin/users?page=${page}&limit=10`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -47,7 +49,7 @@ const AdminUsers = () => {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(`{BASE_URL}/api/admin/users/${userId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

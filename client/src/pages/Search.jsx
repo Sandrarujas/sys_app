@@ -5,6 +5,8 @@ import { useLocation, Link } from "react-router-dom"
 import axios from "axios"
 import Post from "../components/Post"
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const Search = () => {
   const location = useLocation()
   const searchParams = new URLSearchParams(location.search)
@@ -28,10 +30,10 @@ const Search = () => {
 
       try {
         if (activeTab === "users") {
-          const res = await axios.get(`/api/search/users?q=${query}`)
+          const res = await axios.get(`${BASE_URL}/api/search/users?q=${query}`)
           setUsers(res.data)
         } else {
-          const res = await axios.get(`/api/search/posts?q=${query}`)
+          const res = await axios.get(`${BASE_URL}/api/search/posts?q=${query}`)
           setPosts(res.data)
         }
         setLoading(false)
@@ -48,9 +50,9 @@ const Search = () => {
   const handleFollow = async (userId, isFollowing, index) => {
     try {
       if (isFollowing) {
-        await axios.delete(`/api/users/${userId}/unfollow`)
+        await axios.delete(`${BASE_URL}/api/users/${userId}/unfollow`)
       } else {
-        await axios.post(`/api/users/${userId}/follow`)
+        await axios.post(`${BASE_URL}/api/users/${userId}/follow`)
       }
 
       // Actualizar estado local
@@ -86,7 +88,7 @@ const Search = () => {
               <div key={user.id} className="user-card">
                 <Link to={`/profile/${user.username}`} className="user-info">
                   <img
-                    src={user.profileImage ? `${user.profileImage}` : "/placeholder.svg?height=50&width=50"}
+                    src={user.profileImage ? `${BASE_URL}${user.profileImage}` : "/placeholder.svg?height=50&width=50"}
                     alt={user.username}
                     className="user-image"
                   />

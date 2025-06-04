@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import styles from "../styles/CreatePost.module.css" // Importamos el módulo CSS
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const CreatePost = ({ onPostCreated }) => {
   const [content, setContent] = useState("")
   const [image, setImage] = useState(null)
@@ -46,7 +48,7 @@ const CreatePost = ({ onPostCreated }) => {
       formData.append("content", content)
       if (image) formData.append("image", image)
 
-      const res = await axios.post("/api/posts", formData, {
+      const res = await axios.post("{BASE_URL}/api/posts", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
 
