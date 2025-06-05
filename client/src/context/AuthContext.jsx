@@ -15,44 +15,40 @@ export const AuthProvider = ({ children }) => {
 
   const [posts, setPosts] = useState([])
 
-  const fetchNotifications = useCallback(
-    async (limit = 5) => {
-      if (!user && !localStorage.getItem("token")) return
+  const fetchNotifications = useCallback(async (limit = 5) => {
+    const token = localStorage.getItem("token")
+    if (!token) return
 
-      try {
-        setNotificationsLoading(true)
-        const res = await axios.get(`/api/notifications?limit=${limit}`)
-        setNotifications(res.data.notifications)
-        setUnreadCount(res.data.unreadCount)
-        return res.data
-      } catch (error) {
-        console.error("Error al cargar notificaciones:", error)
-      } finally {
-        setNotificationsLoading(false)
-      }
-    },
-    [user],
-  )
+    try {
+      setNotificationsLoading(true)
+      const res = await axios.get(`/api/notifications?limit=${limit}`)
+      setNotifications(res.data.notifications)
+      setUnreadCount(res.data.unreadCount)
+    } catch (error) {
+      console.error("Error al cargar notificaciones:", error)
+    } finally {
+      setNotificationsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     const checkLoggedIn = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        setLoading(false)
+        return
+      }
+
       try {
-        const token = localStorage.getItem("token")
-        if (token) {
-          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`
-          const res = await axios.get("/api/auth/me")
-          setUser({
-            id: res.data.id,
-            username: res.data.username,
-            email: res.data.email,
-            role: res.data.role,
-          })
-        }
-      } catch (error) {
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`
+        const res = await axios.get("/api/auth/me")
+        setUser(res.data)
+      } catch {
         localStorage.removeItem("token")
         delete axios.defaults.headers.common["Authorization"]
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     checkLoggedIn()
@@ -61,53 +57,35 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       fetchNotifications()
+      const interval = setInterval(fetchNotifications, 30000)
+      return () => clearInterval(interval)
     }
-  }, [user, fetchNotifications])
-
-  useEffect(() => {
-    if (!user) return
-
-    const interval = setInterval(() => {
-      fetchNotifications()
-    }, 30000)
-
-    return () => clearInterval(interval)
   }, [user, fetchNotifications])
 
   const login = async (email, password) => {
     try {
       const res = await axios.post("/api/auth/login", { email, password })
-      localStorage.setItem("token", res.data.token)
-      axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
-      setUser({
-        id: res.data.user.id,
-        username: res.data.user.username,
-        email: res.data.user.email,
-        role: res.data.user.role,
-      })
+      const { token, user: userData } = res.data
+
+      localStorage.setItem("token", token)
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`
+      setUser(userData)
       return true
-    } catch (error) {
+    } catch {
       return false
     }
   }
 
   const register = async (username, email, password) => {
     try {
-      const res = await axios.post("/api/auth/register", {
-        username,
-        email,
-        password,
-      })
-      localStorage.setItem("token", res.data.token)
-      axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
-      setUser({
-        id: res.data.user.id,
-        username: res.data.user.username,
-        email: res.data.user.email,
-        role: res.data.user.role,
-      })
+      const res = await axios.post("/api/auth/register", { username, email, password })
+      const { token, user: userData } = res.data
+
+      localStorage.setItem("token", token)
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`
+      setUser(userData)
       return true
-    } catch (error) {
+    } catch {
       return false
     }
   }
@@ -122,25 +100,14 @@ export const AuthProvider = ({ children }) => {
   }
 
   const updateUser = (updatedData) => {
-    setUser((prevUser) => ({
-      ...prevUser,
-      ...updatedData,
-    }))
+    setUser((prev) => ({ ...prev, ...updatedData }))
   }
 
   const refreshUser = async () => {
     try {
-      const token = localStorage.getItem("token")
-      if (token) {
-        const res = await axios.get("/api/auth/me")
-        setUser({
-          id: res.data.id,
-          username: res.data.username,
-          email: res.data.email,
-          role: res.data.role,
-        })
-        return res.data
-      }
+      const res = await axios.get("/api/auth/me")
+      setUser(res.data)
+      return res.data
     } catch (error) {
       console.error("Error refreshing user:", error)
     }
@@ -149,52 +116,48 @@ export const AuthProvider = ({ children }) => {
   const markNotificationAsRead = async (id) => {
     try {
       await axios.put(`/api/notifications/${id}/read`)
-      setNotifications((prev) => prev.map((notif) => (notif.id === id ? { ...notif, isRead: true } : notif)))
-      setUnreadCount((prev) => (prev > 0 ? prev - 1 : 0))
+      setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
+      setUnreadCount((prev) => Math.max(prev - 1, 0))
     } catch (error) {
-      console.error("Error al marcar notificación:", error)
+      console.error("Error al marcar notificación como leída:", error)
     }
   }
 
   const markAllNotificationsAsRead = async () => {
     try {
       await axios.put("/api/notifications/read-all")
-      setNotifications((prev) => prev.map((notif) => ({ ...notif, isRead: true })))
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
       setUnreadCount(0)
     } catch (error) {
-      console.error("Error al marcar todas las notificaciones:", error)
+      console.error("Error al marcar todas como leídas:", error)
     }
   }
 
   const updatePost = (postId, updatedData) => {
-    setPosts((prevPosts) => prevPosts.map((post) => (post.id === postId ? { ...post, ...updatedData } : post)))
+    setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, ...updatedData } : post))
   }
 
   const deletePost = (postId) => {
-    setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId))
+    setPosts((prev) => prev.filter((post) => post.id !== postId))
   }
 
   const addPost = (newPost) => {
-    setPosts((prevPosts) => [newPost, ...prevPosts])
+    setPosts((prev) => [newPost, ...prev])
   }
 
   const setAllPosts = (newPosts) => {
     setPosts(newPosts)
   }
 
-  const updatePostLikes = (postId, liked, likesCount) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => (post.id === postId ? { ...post, liked, likes: likesCount } : post)),
-    )
+  const updatePostLikes = (postId, liked, likes) => {
+    setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, liked, likes } : post))
   }
 
   const updatePostComments = (postId, commentCount) => {
-    setPosts((prevPosts) => prevPosts.map((post) => (post.id === postId ? { ...post, commentCount } : post)))
+    setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, commentCount } : post))
   }
 
-  const isAdmin = () => {
-  return user?.role === "admin"
-}
+  const isAdmin = () => user?.role === "admin"
 
   return (
     <AuthContext.Provider
@@ -227,8 +190,6 @@ export const AuthProvider = ({ children }) => {
   )
 }
 
-export const useAuth = () => {
-  return useContext(AuthContext)
-}
+export const useAuth = () => useContext(AuthContext)
 
 export default AuthContext
