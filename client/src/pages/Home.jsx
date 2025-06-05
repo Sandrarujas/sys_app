@@ -23,13 +23,13 @@ const Home = () => {
     try {
       setLoading(true)
       const res = await axios.get(`/api/posts?page=${page}&limit=5`)
-      setPosts(Array.isArray(res.data.posts) ? res.data.posts : [])
-      setPagination(res.data.pagination || {
-        page: 1,
-        limit: 5,
-        total: 0,
-        totalPages: 0,
-      })
+      if (res.data && Array.isArray(res.data.posts)) {
+        setPosts(res.data.posts)
+        setPagination(res.data.pagination || pagination)
+        setError("")
+      } else {
+        setError("Respuesta inesperada del servidor")
+      }
     } catch (err) {
       console.error("Error fetching posts:", err)
       setError("Error al cargar las publicaciones")
@@ -66,7 +66,7 @@ const Home = () => {
     if (page < pagination.totalPages) setPage(page + 1)
   }
 
-  if (loading && page === 1) {
+  if (loading) {
     return <div className={styles.loading}>Cargando publicaciones...</div>
   }
 
@@ -74,13 +74,16 @@ const Home = () => {
     return <div className={styles.error}>{error}</div>
   }
 
+  console.log("posts:", posts)
+  console.log("pagination:", pagination)
+
   return (
     <div className={styles["home-container"]}>
       <h1>
-        <p>Bienvenido, {user?.username || "Usuario"}</p>¿Qué hay de nuevo?
+        <p>Bienvenido, {user?.username}</p>¿Qué hay de nuevo?
       </h1>
       <div className={styles["posts-container"]}>
-        {posts.length > 0 ? (
+        {Array.isArray(posts) && posts.length > 0 ? (
           posts.map((post) => (
             <Post
               key={post.id}
