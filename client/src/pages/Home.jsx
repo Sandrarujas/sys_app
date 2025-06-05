@@ -23,8 +23,13 @@ const Home = () => {
     try {
       setLoading(true)
       const res = await axios.get(`/api/posts?page=${page}&limit=5`)
-      setPosts(res.data.posts)
-      setPagination(res.data.pagination)
+      setPosts(Array.isArray(res.data.posts) ? res.data.posts : [])
+      setPagination(res.data.pagination || {
+        page: 1,
+        limit: 5,
+        total: 0,
+        totalPages: 0,
+      })
     } catch (err) {
       console.error("Error fetching posts:", err)
       setError("Error al cargar las publicaciones")
@@ -38,7 +43,9 @@ const Home = () => {
   }, [page])
 
   const handlePostUpdate = (updatedPost) => {
-    setPosts((prev) => prev.map((post) => post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
+    setPosts((prev) =>
+      prev.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
+    )
     updatePost(updatedPost.id, updatedPost)
   }
 
@@ -70,7 +77,7 @@ const Home = () => {
   return (
     <div className={styles["home-container"]}>
       <h1>
-        <p>Bienvenido, {user?.username}</p>¿Qué hay de nuevo?
+        <p>Bienvenido, {user?.username || "Usuario"}</p>¿Qué hay de nuevo?
       </h1>
       <div className={styles["posts-container"]}>
         {posts.length > 0 ? (
