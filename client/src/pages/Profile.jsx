@@ -27,13 +27,22 @@ const Profile = () => {
     const fetchProfile = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/api/users/${username}`);
+        console.log("Perfil API response:", res.data);
         setProfile(res.data);
         setIsFollowing(res.data.isFollowing);
 
         const postsRes = await axios.get(`${BASE_URL}/api/posts/user/${username}`);
-        
-        // Asegurarse que postsRes.data.posts sea un array antes de setear
-        setPosts(Array.isArray(postsRes.data.posts) ? postsRes.data.posts : []);
+        console.log("Posts API response:", postsRes.data);
+
+        // Aquí verifica si postsRes.data es un array o un objeto con posts dentro
+        if (Array.isArray(postsRes.data)) {
+          setPosts(postsRes.data);
+        } else if (postsRes.data.posts) {
+          setPosts(postsRes.data.posts);
+        } else {
+          console.warn("Posts response tiene un formato inesperado:", postsRes.data);
+          setPosts([]);
+        }
 
         setLoading(false);
       } catch (error) {
@@ -100,10 +109,7 @@ const Profile = () => {
             className={styles["profile-image"]}
           />
           {isOwnProfile && (
-            <button
-              className={styles["edit-profile-image-button"]}
-              onClick={() => setIsEditModalOpen(true)}
-            >
+            <button className={styles["edit-profile-image-button"]} onClick={() => setIsEditModalOpen(true)}>
               Cambiar foto
             </button>
           )}
@@ -112,10 +118,7 @@ const Profile = () => {
           <div className={styles["profile-username-container"]}>
             <h1 className={styles["profile-username"]}>{profile.username}</h1>
             {isOwnProfile && (
-              <button
-                className={styles["edit-profile-button"]}
-                onClick={() => setIsEditModalOpen(true)}
-              >
+              <button className={styles["edit-profile-button"]} onClick={() => setIsEditModalOpen(true)}>
                 Editar perfil
               </button>
             )}
@@ -160,12 +163,7 @@ const Profile = () => {
         <div className={styles["posts-container"]}>
           {Array.isArray(posts) && posts.length > 0 ? (
             posts.map((post) => (
-              <Post
-                key={post.id}
-                post={post}
-                onPostUpdate={handlePostUpdate}
-                onPostDelete={handlePostDelete}
-              />
+              <Post key={post.id} post={post} onPostUpdate={handlePostUpdate} onPostDelete={handlePostDelete} />
             ))
           ) : (
             <p>No hay publicaciones disponibles.</p>
