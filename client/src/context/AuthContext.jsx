@@ -63,33 +63,46 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user, fetchNotifications])
 
-  const login = async (email, password) => {
-    try {
-      const res = await axiosInstance.post("/api/auth/login", { email, password })
-      const { token, user: userData } = res.data
+const login = async (email, password) => {
+  try {
+    const res = await axiosInstance.post("/api/auth/login", { email, password })
+    const { token, user: userData } = res.data
 
-      localStorage.setItem("token", token)
-      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
-      setUser(userData)
-      return true
-    } catch {
-      return false
-    }
+    localStorage.setItem("token", token)
+    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
+    setUser(userData)
+
+    return { success: true }
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Error al iniciar sesión"
+
+    return { success: false, message }
   }
+}
 
-  const register = async (username, email, password) => {
-    try {
-      const res = await axiosInstance.post("/api/auth/register", { username, email, password })
-      const { token, user: userData } = res.data
 
-      localStorage.setItem("token", token)
-      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
-      setUser(userData)
-      return true
-    } catch {
-      return false
-    }
+const register = async (username, email, password) => {
+  try {
+    const res = await axiosInstance.post("/api/auth/register", { username, email, password })
+    const { token, user: userData } = res.data
+
+    localStorage.setItem("token", token)
+    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
+    setUser(userData)
+
+    return { success: true }
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Error al registrarse"
+
+    return { success: false, message }
   }
+}
 
   const logout = () => {
     localStorage.removeItem("token")
