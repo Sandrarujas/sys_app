@@ -90,10 +90,10 @@ const NotificationList = () => {
   }
 
   const getImageUrl = (imagePath) => {
-    if (!imagePath) return "/placeholder.svg?height=40&width=40"
-    if (imagePath.startsWith("http")) return imagePath
-    return `${BASE_URL}${imagePath}`
-  }
+  if (!imagePath || typeof imagePath !== "string") return "/placeholder.svg?height=40&width=40"
+  return imagePath.startsWith("http") ? imagePath : `${BASE_URL}${imagePath}`
+}
+
 
   return (
     <div className={styles["notification-container"]}>

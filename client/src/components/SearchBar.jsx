@@ -11,6 +11,7 @@ const SearchBar = () => {
     e.preventDefault()
     if (searchTerm.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchTerm)}`)
+      setSearchTerm("")
     }
   }
 

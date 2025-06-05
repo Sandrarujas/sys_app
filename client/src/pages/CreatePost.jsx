@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import axios from "axios"
+import axiosInstance from "../api/axiosInstance"
 import styles from "../styles/CreatePost.module.css" // Importamos el módulo CSS
 
 const BASE_URL = process.env.REACT_APP_API_URL;
@@ -48,7 +48,7 @@ const CreatePost = ({ onPostCreated }) => {
       formData.append("content", content)
       if (image) formData.append("image", image)
 
-      const res = await axios.post(`${BASE_URL}/api/posts`, formData, {
+      const res = await axiosInstance.post(`${BASE_URL}/api/posts`, formData, {
   headers: { "Content-Type": "multipart/form-data" },
 })
 

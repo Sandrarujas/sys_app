@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance"
 import { AuthContext } from "../context/AuthContext";
 import Post from "../components/Post";
 import EditProfileModal from "../components/EditProfileModal";
@@ -28,12 +28,12 @@ const Profile = () => {
 
     const fetchProfile = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/users/${username}`);
+        const res = await axiosInstance.get(`${BASE_URL}/api/users/${username}`);
         console.log("Perfil recibido:", res.data);
         setProfile(res.data);
         setIsFollowing(res.data.isFollowing);
 
-        const postsRes = await axios.get(`${BASE_URL}/api/posts/user/${username}`);
+        const postsRes = await axiosInstance.get(`${BASE_URL}/api/posts/user/${username}`);
         console.log("Posts recibidos:", postsRes.data);
 
         if (Array.isArray(postsRes.data)) {
@@ -116,9 +116,9 @@ const Profile = () => {
               onClick={() => {
                 try {
                   if (isFollowing) {
-                    axios.delete(`${BASE_URL}/api/users/${profile.id}/unfollow`);
+                    axiosInstance.delete(`${BASE_URL}/api/users/${profile.id}/unfollow`);
                   } else {
-                    axios.post(`${BASE_URL}/api/users/${profile.id}/follow`);
+                    axiosInstance.post(`${BASE_URL}/api/users/${profile.id}/follow`);
                   }
                   setIsFollowing(!isFollowing);
                   setProfile({

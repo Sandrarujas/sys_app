@@ -1,18 +1,20 @@
-// client/src/components/Avatar.jsx
+
 import { useState } from 'react';
-const BASE_URL = process.env.REACT_APP_API_URL;
+
+const BASE_URL = process.env.REACT_APP_API_URL || "";
 
 const Avatar = ({ src, username, size = 40, version = "" }) => {
   const [error, setError] = useState(false);
 
   const getImageUrl = (imagePath) => {
-    if (!imagePath || error) return `/placeholder.svg?height=${size}&width=${size}`;
+    if (!imagePath || error) {
+      return `/placeholder.svg?height=${size}&width=${size}`;
+    }
 
-    const baseUrl = imagePath.startsWith("http")
-      ? imagePath
-      : `${BASE_URL}${imagePath}`;
+    const isAbsolute = imagePath.startsWith("http") || imagePath.startsWith("//");
+    const fullUrl = isAbsolute ? imagePath : `${BASE_URL}${imagePath}`;
 
-    return version ? `${baseUrl}?v=${version}` : baseUrl;
+    return version ? `${fullUrl}?v=${version}` : fullUrl;
   };
 
   return (
