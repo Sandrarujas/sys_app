@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useContext } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import Post from "../components/Post";
@@ -24,76 +24,41 @@ const Profile = () => {
   const isOwnProfile = user && profile && user.id === profile.id;
 
   useEffect(() => {
+    console.log("Efecto useEffect - fetchProfile llamado con username:", username);
+
     const fetchProfile = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/api/users/${username}`);
-        console.log("Perfil API response:", res.data);
+        console.log("Perfil recibido:", res.data);
         setProfile(res.data);
         setIsFollowing(res.data.isFollowing);
 
         const postsRes = await axios.get(`${BASE_URL}/api/posts/user/${username}`);
-        console.log("Posts API response:", postsRes.data);
+        console.log("Posts recibidos:", postsRes.data);
 
-        // Aquí verifica si postsRes.data es un array o un objeto con posts dentro
         if (Array.isArray(postsRes.data)) {
           setPosts(postsRes.data);
-        } else if (postsRes.data.posts) {
+        } else if (postsRes.data && Array.isArray(postsRes.data.posts)) {
           setPosts(postsRes.data.posts);
         } else {
-          console.warn("Posts response tiene un formato inesperado:", postsRes.data);
+          console.warn("Formato inesperado de posts:", postsRes.data);
           setPosts([]);
         }
 
         setLoading(false);
-      } catch (error) {
+      } catch (err) {
+        console.error("Error al obtener perfil o posts:", err);
         setError("Error al cargar el perfil");
         setLoading(false);
-        console.error("Error fetching profile:", error);
       }
     };
 
     fetchProfile();
   }, [username]);
 
-  const handleFollow = async () => {
-    try {
-      if (isFollowing) {
-        await axios.delete(`${BASE_URL}/api/users/${profile.id}/unfollow`);
-      } else {
-        await axios.post(`${BASE_URL}/api/users/${profile.id}/follow`);
-      }
-      setIsFollowing(!isFollowing);
-      setProfile({
-        ...profile,
-        followers: isFollowing ? profile.followers - 1 : profile.followers + 1,
-      });
-    } catch (error) {
-      console.error("Error following/unfollowing user:", error);
-    }
-  };
-
-  const handleProfileUpdate = (updatedData) => {
-    setProfile({
-      ...profile,
-      ...updatedData,
-    });
-  };
-
-  const handlePostUpdate = (updatedPost) => {
-    console.log("Actualizando publicación:", updatedPost);
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
-    );
-  };
-
-  const handlePostDelete = (postId) => {
-    console.log("Eliminando publicación:", postId);
-    setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
-  };
-
-  if (loading) return <div className={styles["loading"]}>Cargando perfil...</div>;
-  if (error) return <div className={styles["error"]}>{error}</div>;
-  if (!profile) return <div className={styles["error"]}>Usuario no encontrado</div>;
+  if (loading) return <div className={styles.loading}>Cargando perfil...</div>;
+  if (error) return <div className={styles.error}>{error}</div>;
+  if (!profile) return <div className={styles.error}>Usuario no encontrado</div>;
 
   return (
     <div className={styles["profile-container"]}>
@@ -148,7 +113,22 @@ const Profile = () => {
           {user && user.id !== profile.id && (
             <button
               className={`${styles["follow-button"]} ${isFollowing ? styles["following"] : ""}`}
-              onClick={handleFollow}
+              onClick={() => {
+                try {
+                  if (isFollowing) {
+                    axios.delete(`${BASE_URL}/api/users/${profile.id}/unfollow`);
+                  } else {
+                    axios.post(`${BASE_URL}/api/users/${profile.id}/follow`);
+                  }
+                  setIsFollowing(!isFollowing);
+                  setProfile({
+                    ...profile,
+                    followers: isFollowing ? profile.followers - 1 : profile.followers + 1,
+                  });
+                } catch (e) {
+                  console.error("Error en follow/unfollow:", e);
+                }
+              }}
             >
               {isFollowing ? "Dejar de Seguir" : "Seguir"}
             </button>
@@ -161,9 +141,24 @@ const Profile = () => {
       <div className={styles["profile-posts"]}>
         <h2>Publicaciones</h2>
         <div className={styles["posts-container"]}>
-          {Array.isArray(posts) && posts.length > 0 ? (
+          {!Array.isArray(posts) ? (
+            <p>Error: posts no es un array.</p>
+          ) : posts.length > 0 ? (
             posts.map((post) => (
-              <Post key={post.id} post={post} onPostUpdate={handlePostUpdate} onPostDelete={handlePostDelete} />
+              <Post
+                key={post.id}
+                post={post}
+                onPostUpdate={(updatedPost) => {
+                  console.log("Actualizando publicación:", updatedPost);
+                  setPosts((prev) =>
+                    prev.map((p) => (p.id === updatedPost.id ? { ...p, ...updatedPost } : p))
+                  );
+                }}
+                onPostDelete={(postId) => {
+                  console.log("Eliminando publicación:", postId);
+                  setPosts((prev) => prev.filter((p) => p.id !== postId));
+                }}
+              />
             ))
           ) : (
             <p>No hay publicaciones disponibles.</p>
@@ -176,7 +171,9 @@ const Profile = () => {
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           profile={profile}
-          onProfileUpdate={handleProfileUpdate}
+          onProfileUpdate={(updatedData) =>
+            setProfile((prev) => ({ ...prev, ...updatedData }))
+          }
         />
       )}
     </div>
