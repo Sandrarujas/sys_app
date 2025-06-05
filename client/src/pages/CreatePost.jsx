@@ -48,9 +48,10 @@ const CreatePost = ({ onPostCreated }) => {
       formData.append("content", content)
       if (image) formData.append("image", image)
 
-      const res = await axios.post('{BASE_URL}/api/posts', formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      })
+      const res = await axios.post(`${BASE_URL}/api/posts`, formData, {
+  headers: { "Content-Type": "multipart/form-data" },
+})
+
 
       setContent("")
       setImage(null)
