@@ -31,7 +31,9 @@ const Profile = () => {
         setIsFollowing(res.data.isFollowing);
 
         const postsRes = await axios.get(`${BASE_URL}/api/posts/user/${username}`);
-        setPosts(postsRes.data);
+        
+        // Asegurarse que postsRes.data.posts sea un array antes de setear
+        setPosts(Array.isArray(postsRes.data.posts) ? postsRes.data.posts : []);
 
         setLoading(false);
       } catch (error) {
@@ -68,7 +70,6 @@ const Profile = () => {
     });
   };
 
-  // Funciones para manejar actualizaciones y eliminaciones de posts
   const handlePostUpdate = (updatedPost) => {
     console.log("Actualizando publicación:", updatedPost);
     setPosts((prevPosts) =>
@@ -91,13 +92,18 @@ const Profile = () => {
         <div className={styles["profile-image-container"]}>
           <img
             src={
-              profile.profileImage ? `${BASE_URL}${profile.profileImage}` : "/placeholder.svg?height=150&width=150"
+              profile.profileImage
+                ? `${BASE_URL}${profile.profileImage}`
+                : "/placeholder.svg?height=150&width=150"
             }
             alt={profile.username}
             className={styles["profile-image"]}
           />
           {isOwnProfile && (
-            <button className={styles["edit-profile-image-button"]} onClick={() => setIsEditModalOpen(true)}>
+            <button
+              className={styles["edit-profile-image-button"]}
+              onClick={() => setIsEditModalOpen(true)}
+            >
               Cambiar foto
             </button>
           )}
@@ -106,7 +112,10 @@ const Profile = () => {
           <div className={styles["profile-username-container"]}>
             <h1 className={styles["profile-username"]}>{profile.username}</h1>
             {isOwnProfile && (
-              <button className={styles["edit-profile-button"]} onClick={() => setIsEditModalOpen(true)}>
+              <button
+                className={styles["edit-profile-button"]}
+                onClick={() => setIsEditModalOpen(true)}
+              >
                 Editar perfil
               </button>
             )}
@@ -149,9 +158,14 @@ const Profile = () => {
       <div className={styles["profile-posts"]}>
         <h2>Publicaciones</h2>
         <div className={styles["posts-container"]}>
-          {posts.length > 0 ? (
+          {Array.isArray(posts) && posts.length > 0 ? (
             posts.map((post) => (
-              <Post key={post.id} post={post} onPostUpdate={handlePostUpdate} onPostDelete={handlePostDelete} />
+              <Post
+                key={post.id}
+                post={post}
+                onPostUpdate={handlePostUpdate}
+                onPostDelete={handlePostDelete}
+              />
             ))
           ) : (
             <p>No hay publicaciones disponibles.</p>
