@@ -30,11 +30,11 @@ const Login = () => {
       return
     }
 
-    const success = await login(email, password)
-    if (success) {
+    const result = await login(email, password)
+    if (result.success) {
       navigate("/")
     } else {
-      setError("Credenciales inválidas")
+      setError(result.message)
     }
   }
 

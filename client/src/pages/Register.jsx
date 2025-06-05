@@ -39,8 +39,9 @@ const Register = () => {
     if (result.success) {
       navigate("/")
     } else {
-      setError(result.message || "Error al registrarse")
+      setError(result.message)
     }
+
   }
 
   return (
