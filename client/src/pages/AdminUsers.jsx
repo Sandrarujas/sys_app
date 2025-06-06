@@ -21,7 +21,7 @@ const AdminUsers = () => {
   const fetchUsers = async (page = 1) => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`{BASE_URL}/api/admin/users?page=${page}&limit=10`, {
+const response = await fetch(`${BASE_URL}/api/admin/users?page=${page}&limit=10`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
