@@ -65,23 +65,25 @@ export const AuthProvider = ({ children }) => {
 
 const login = async (email, password) => {
   try {
-    const res = await axiosInstance.post("/api/auth/login", { email, password })
-    const { token, user: userData } = res.data
+    const res = await axiosInstance.post("/api/auth/login", { email, password });
+    console.log("Login response data:", res.data); // <-- Aquí vemos qué responde el backend
+    const { token, user: userData } = res.data;
 
-    localStorage.setItem("token", token)
-    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
-    setUser(userData)
+    localStorage.setItem("token", token);
+    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    setUser(userData);
 
-    return { success: true }
+    return { success: true };
   } catch (error) {
     const message =
       error.response?.data?.message ||
       error.message ||
-      "Error al iniciar sesión"
+      "Error al iniciar sesión";
 
-    return { success: false, message }
+    return { success: false, message };
   }
-}
+};
+
 
 
 const register = async (username, email, password) => {
