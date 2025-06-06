@@ -85,26 +85,28 @@ const login = async (email, password) => {
 };
 
 
-
 const register = async (username, email, password) => {
   try {
-    const res = await axiosInstance.post("/api/auth/register", { username, email, password })
-    const { token, user: userData } = res.data
+    const res = await axiosInstance.post("/api/auth/register", { username, email, password });
+    const { token, user: userData } = res.data;
 
-    localStorage.setItem("token", token)
-    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
-    setUser(userData)
+    localStorage.setItem("token", token);
+    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-    return { success: true }
+    if (typeof setUser === "function") {
+      setUser(userData);
+    }
+
+    return { success: true };
   } catch (error) {
     const message =
       error.response?.data?.message ||
       error.message ||
-      "Error al registrarse"
+      "Error al registrarse";
 
-    return { success: false, message }
+    return { success: false, message };
   }
-}
+};
 
   const logout = () => {
     localStorage.removeItem("token")
