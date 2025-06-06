@@ -84,29 +84,34 @@ const login = async (email, password) => {
   }
 };
 
-
 const register = async (username, email, password) => {
   try {
-    const res = await axiosInstance.post("/api/auth/register", { username, email, password });
-    const { token, user: userData } = res.data;
+    const res = await axiosInstance.post("/api/auth/register", {
+      username,
+      email,
+      password,
+    })
 
-    localStorage.setItem("token", token);
-    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    localStorage.setItem("token", res.data.token)
+    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
 
-    if (typeof setUser === "function") {
-      setUser(userData);
-    }
+    // Aquí asumo que setUser está definido en el mismo contexto donde llamas a register
+    setUser({
+      id: res.data.user.id,
+      username: res.data.user.username,
+      email: res.data.user.email,
+      role: res.data.user.role,
+    })
 
-    return { success: true };
+    return { success: true }
   } catch (error) {
     const message =
       error.response?.data?.message ||
       error.message ||
-      "Error al registrarse";
-
-    return { success: false, message };
+      "Error al registrarse"
+    return { success: false, message }
   }
-};
+}
 
   const logout = () => {
     localStorage.removeItem("token")
