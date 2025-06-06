@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import { Link } from "react-router-dom"
-import styles from "../styles/Admin.module.css"  // Importando CSS modular
+import styles from "../styles/Admin.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL
 
 const AdminDashboard = () => {
   const { user } = useAuth()
@@ -19,7 +19,7 @@ const AdminDashboard = () => {
   const fetchDashboardStats = async () => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch("{BASE_URL}/api/admin/dashboard/stats", {
+      const response = await fetch(`${BASE_URL}/api/admin/dashboard/stats`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

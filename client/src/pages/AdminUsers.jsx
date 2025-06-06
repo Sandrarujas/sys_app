@@ -50,7 +50,7 @@ const response = await fetch(`${BASE_URL}/api/admin/users?page=${page}&limit=10`
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`{BASE_URL}/api/admin/users/${userId}`, {
+const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

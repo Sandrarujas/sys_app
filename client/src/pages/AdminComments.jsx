@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import styles from "../styles/Admin.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL
 
 const AdminComments = () => {
   const [comments, setComments] = useState([])
@@ -11,71 +11,77 @@ const AdminComments = () => {
   const [pagination, setPagination] = useState({ total: 0, pages: 1 })
   const [currentPage, setCurrentPage] = useState(1)
   const [users, setUsers] = useState({})
-  const [searchTerm, setSearchTerm] = useState("") // 👈 Búsqueda por nombre
+  const [searchTerm, setSearchTerm] = useState("")
 
-  const fetchUsername = useCallback(async (userId) => {
-    if (users[userId]) return users[userId]
+  const fetchUsername = useCallback(
+    async (userId) => {
+      if (users[userId]) return users[userId]
 
-    try {
-      const token = localStorage.getItem("token")
-      const response = await fetch(`{BASE_URL}/api/users/id/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      try {
+        const token = localStorage.getItem("token")
+        const response = await fetch(`${BASE_URL}/api/users/id/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
 
-      if (response.ok) {
-        const userData = await response.json()
-        const username = userData.username || userData.name || `Usuario ${userId}`
-        setUsers(prev => ({ ...prev, [userId]: username }))
-        return username
-      }
-    } catch (error) {
-      console.error(`Error fetching username for ${userId}:`, error)
-    }
-
-    const fallback = `Usuario ${userId}`
-    setUsers(prev => ({ ...prev, [userId]: fallback }))
-    return fallback
-  }, [users])
-
-  const fetchComments = useCallback(async (page = 1) => {
-    try {
-      const token = localStorage.getItem("token")
-      const response = await fetch(`{BASE_URL}/api/admin/comments?page=${page}&limit=10`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-
-        if (Array.isArray(data)) {
-          setComments(data)
-          setPagination({ total: data.length, pages: 1 })
-          data.forEach(comment => fetchUsername(comment.user_id))
-        } else {
-          setComments([])
-          setPagination({ total: 0, pages: 1 })
+        if (response.ok) {
+          const userData = await response.json()
+          const username = userData.username || userData.name || `Usuario ${userId}`
+          setUsers((prev) => ({ ...prev, [userId]: username }))
+          return username
         }
-      } else {
-        const errorText = await response.text()
-        console.error("Error en la respuesta:", response.status, errorText)
+      } catch (error) {
+        console.error(`Error fetching username for ${userId}:`, error)
       }
-    } catch (error) {
-      console.error("Error fetching comments:", error)
-    } finally {
-      setLoading(false)
-    }
-  }, [fetchUsername])
+
+      const fallback = `Usuario ${userId}`
+      setUsers((prev) => ({ ...prev, [userId]: fallback }))
+      return fallback
+    },
+    [users]
+  )
+
+  const fetchComments = useCallback(
+    async (page = 1) => {
+      try {
+        const token = localStorage.getItem("token")
+        const response = await fetch(`${BASE_URL}/api/admin/comments?page=${page}&limit=10`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+
+          if (Array.isArray(data)) {
+            setComments(data)
+            setPagination({ total: data.length, pages: 1 }) // Ajusta si tu backend soporta paginación real
+            data.forEach((comment) => fetchUsername(comment.user_id))
+          } else {
+            setComments([])
+            setPagination({ total: 0, pages: 1 })
+          }
+        } else {
+          const errorText = await response.text()
+          console.error("Error en la respuesta:", response.status, errorText)
+        }
+      } catch (error) {
+        console.error("Error fetching comments:", error)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [fetchUsername]
+  )
 
   useEffect(() => {
     fetchComments(currentPage)
   }, [currentPage, fetchComments])
 
   const deleteComment = async (commentId) => {
-    if (!window.confirm(`¿Estás seguro de que quieres eliminar este comentario?`)) return
+    if (!window.confirm("¿Estás seguro de que quieres eliminar este comentario?")) return
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`{BASE_URL}/api/admin/comments/${commentId}`, {
+      const response = await fetch(`${BASE_URL}/api/admin/comments/${commentId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -125,8 +131,12 @@ const AdminComments = () => {
                 <div className={styles["comment-header"]}>
                   <div className={styles["comment-info"]}>
                     <span className={styles["comment-id"]}>ID: {comment.id}</span>
-                    <span className={styles["comment-author"]}>Por: {users[comment.user_id] || `Usuario ${comment.user_id}`}</span>
-                    <span className={styles["comment-date"]}>{new Date(comment.created_at).toLocaleDateString()}</span>
+                    <span className={styles["comment-author"]}>
+                      Por: {users[comment.user_id] || `Usuario ${comment.user_id}`}
+                    </span>
+                    <span className={styles["comment-date"]}>
+                      {new Date(comment.created_at).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
 

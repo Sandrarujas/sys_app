@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import styles from "../styles/Admin.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL
 
 const AdminPosts = () => {
   const [posts, setPosts] = useState([])
@@ -11,14 +11,14 @@ const AdminPosts = () => {
   const [pagination, setPagination] = useState({ total: 0, pages: 1 })
   const [currentPage, setCurrentPage] = useState(1)
   const [users, setUsers] = useState({})
-  const [searchTerm, setSearchTerm] = useState("") // 👈 nuevo estado para filtrar
+  const [searchTerm, setSearchTerm] = useState("")
 
   const fetchUsername = useCallback(async (userId) => {
     if (users[userId]) return users[userId]
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`http://{BASE_URL}/api/users/id/${userId}`, {
+      const response = await fetch(`${BASE_URL}/api/users/id/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -42,7 +42,7 @@ const AdminPosts = () => {
   const fetchPosts = useCallback(async (page = 1) => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`{BASE_URL}/api/admin/posts?page=${page}&limit=10`, {
+      const response = await fetch(`${BASE_URL}/api/admin/posts?page=${page}&limit=10`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -52,10 +52,8 @@ const AdminPosts = () => {
         const data = await response.json()
         if (Array.isArray(data)) {
           setPosts(data)
-          setPagination({ total: data.length, pages: 1 })
-          data.forEach(post => {
-            fetchUsername(post.user_id)
-          })
+          setPagination({ total: data.length, pages: 1 }) // Puedes mejorar esto si el backend lo soporta
+          data.forEach(post => fetchUsername(post.user_id))
         } else {
           setPosts([])
           setPagination({ total: 0, pages: 1 })
@@ -76,11 +74,11 @@ const AdminPosts = () => {
   }, [currentPage, fetchPosts])
 
   const deletePost = async (postId) => {
-    if (!window.confirm(`¿Estás seguro de que quieres eliminar esta publicación?`)) return
+    if (!window.confirm("¿Estás seguro de que quieres eliminar esta publicación?")) return
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`{BASE_URL}/api/admin/posts/${postId}`, {
+      const response = await fetch(`${BASE_URL}/api/admin/posts/${postId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -154,7 +152,7 @@ const AdminPosts = () => {
                   {post.image && (
                     <div className={styles["post-image"]}>
                       <img
-                        src={`http://localhost:5000${post.image}`}
+                        src={`${BASE_URL}${post.image}`}
                         alt="Post"
                         style={{ maxWidth: "200px", maxHeight: "200px" }}
                       />
