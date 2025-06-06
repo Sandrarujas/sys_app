@@ -17,6 +17,7 @@ const AdminUsers = () => {
   useEffect(() => {
     fetchUsers(currentPage)
   }, [currentPage])
+console.log("BASE_URL es:", BASE_URL)
 
   const fetchUsers = async (page = 1) => {
     try {
