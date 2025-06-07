@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import axiosInstance from "../api/axiosInstance"
+import axiosInstance from "../api/axiosInstances"
 import styles from "../styles/EditProfileModal.module.css"
 
 const BASE_URL = process.env.REACT_APP_API_URL || ""
