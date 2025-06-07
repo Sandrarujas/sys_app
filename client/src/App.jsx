@@ -15,7 +15,6 @@ import AdminDashboard from "./pages/AdminDashboard"
 import AdminUsers from "./pages/AdminUsers"
 import AdminPosts from "./pages/AdminPosts"
 import AdminComments from "./pages/AdminComments"
-import NoAccess from "./pages/NoAccess"
 import PublicRoute from "./components/PublicRoute"
 import CatchAllRedirect from "./components/CatchAllRedirect"
 import "./App.css"
@@ -43,8 +42,6 @@ function App() {
                 </PublicRoute>
               }
             />
-
-            <Route path="/no-access" element={<NoAccess />} />
 
             <Route
               path="/"
