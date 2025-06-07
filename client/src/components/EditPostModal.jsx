@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import axios from "axios"
+import axiosInstance from "../api/axiosInstances"
 import styles from "../styles/EditPostModal.module.css"
 
 const BASE_URL = process.env.REACT_APP_API_URL || "";
@@ -71,7 +71,7 @@ const EditPostModal = ({ isOpen, onClose, post, onPostUpdate }) => {
         formData.append("removeImage", "false")
       }
 
-      const res = await axios.put(`${BASE_URL}/api/posts/${post.id}`, formData, {
+      const res = await axiosInstance.put(`${BASE_URL}/api/posts/${post.id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
