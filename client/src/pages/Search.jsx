@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useLocation, Link } from "react-router-dom"
-import axios from "axios"
+import axiosInstance from "../api/axiosInstances"
 import Post from "../components/Post"
 import styles from "../styles/Search.module.css"
 
@@ -31,10 +31,10 @@ const Search = () => {
 
       try {
         if (activeTab === "users") {
-          const res = await axios.get(`${BASE_URL}/api/search/users?q=${query}`)
+          const res = await axiosInstance.get(`${BASE_URL}/api/search/users?q=${query}`)
           setUsers(res.data)
         } else {
-          const res = await axios.get(`${BASE_URL}/api/search/posts?q=${query}`)
+          const res = await axiosInstance.get(`${BASE_URL}/api/search/posts?q=${query}`)
           setPosts(res.data)
         }
       } catch (error) {
@@ -51,9 +51,9 @@ const Search = () => {
   const handleFollow = async (userId, isFollowing, index) => {
     try {
       if (isFollowing) {
-        await axios.delete(`${BASE_URL}/api/users/${userId}/unfollow`)
+        await axiosInstance.delete(`${BASE_URL}/api/users/${userId}/unfollow`)
       } else {
-        await axios.post(`${BASE_URL}/api/users/${userId}/follow`)
+        await axiosInstance.post(`${BASE_URL}/api/users/${userId}/follow`)
       }
 
       const updatedUsers = [...users]

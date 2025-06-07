@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import axios from "axios"
+import axiosInstance from "../api/axiosInstances"
 import Post from "../components/Post"
 import styles from "../styles/Post.module.css"
 
@@ -19,7 +19,7 @@ const SinglePost = () => {
     const fetchPost = async () => {
       try {
         setLoading(true)
-        const res = await axios.get(`${BASE_URL}/api/posts/${id}`)
+        const res = await axiosInstance.get(`${BASE_URL}/api/posts/${id}`)
         setPost(res.data)
       } catch (error) {
         console.error("Error al cargar la publicación:", error)
