@@ -75,6 +75,11 @@ app.use("/api/search", require("./routes/search"))
 app.use("/api/notifications", require("./routes/notifications"))
 app.use("/api/admin", require("./routes/admin"))
 
+// Ruta raíz para evitar error 404 en GET /
+app.get('/', (req, res) => {
+  res.json({ message: 'API funcionando correctamente' });
+});
+
 // Ruta de salud para Railway y monitoreo
 app.get("/health", (req, res) => {
   res.status(200).json({ 
