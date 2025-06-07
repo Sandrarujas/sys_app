@@ -3,7 +3,6 @@
 import { createContext, useState, useEffect, useCallback, useContext } from "react"
 import axiosInstance from "../api/axiosInstances"
 
-
 export const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
@@ -22,7 +21,12 @@ export const AuthProvider = ({ children }) => {
 
     try {
       setNotificationsLoading(true)
-      const res = await axiosInstance.get(`/api/notifications?limit=${limit}`)
+      // axiosInstance ya tiene baseURL, solo pasamos endpoint
+      const res = await axiosInstance.get(`/api/notifications?limit=${limit}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
       setNotifications(res.data.notifications)
       setUnreadCount(res.data.unreadCount)
     } catch (error) {
@@ -41,6 +45,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
+        // Establecer el token en los headers por defecto de axiosInstance
         axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
         const res = await axiosInstance.get("/api/auth/me")
         setUser(res.data)
@@ -63,55 +68,55 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user, fetchNotifications])
 
-const login = async (email, password) => {
-  try {
-    const res = await axiosInstance.post("/api/auth/login", { email, password });
-    console.log("Login response data:", res.data); // <-- Aquí vemos qué responde el backend
-    const { token, user: userData } = res.data;
+  const login = async (email, password) => {
+    try {
+      const res = await axiosInstance.post("/api/auth/login", { email, password })
+      const { token, user: userData } = res.data
 
-    localStorage.setItem("token", token);
-    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    setUser(userData);
+      localStorage.setItem("token", token)
+      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
+      setUser(userData)
 
-    return { success: true };
-  } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      error.message ||
-      "Error al iniciar sesión";
+      return { success: true }
+    } catch (error) {
+      console.error("Error de login:", error.response?.data || error.message)
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Error al iniciar sesión"
 
-    return { success: false, message };
+      return { success: false, message }
+    }
   }
-};
 
-const register = async (username, email, password) => {
-  try {
-    const res = await axiosInstance.post("/api/auth/register", {
-      username,
-      email,
-      password,
-    })
+  const register = async (username, email, password) => {
+    try {
+      const res = await axiosInstance.post("/api/auth/register", {
+        username,
+        email,
+        password,
+      })
 
-    localStorage.setItem("token", res.data.token)
-    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
+      localStorage.setItem("token", res.data.token)
+      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
 
-    // Aquí asumo que setUser está definido en el mismo contexto donde llamas a register
-    setUser({
-      id: res.data.user.id,
-      username: res.data.user.username,
-      email: res.data.user.email,
-      role: res.data.user.role,
-    })
+      setUser({
+        id: res.data.user.id,
+        username: res.data.user.username,
+        email: res.data.user.email,
+        role: res.data.user.role,
+      })
 
-    return { success: true }
-  } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      error.message ||
-      "Error al registrarse"
-    return { success: false, message }
+      return { success: true }
+    } catch (error) {
+      console.error("Error en registro:", error.response?.data || error.message)
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Error al registrarse"
+      return { success: false, message }
+    }
   }
-}
 
   const logout = () => {
     localStorage.removeItem("token")
@@ -139,7 +144,9 @@ const register = async (username, email, password) => {
   const markNotificationAsRead = async (id) => {
     try {
       await axiosInstance.put(`/api/notifications/${id}/read`)
-      setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      )
       setUnreadCount((prev) => Math.max(prev - 1, 0))
     } catch (error) {
       console.error("Error al marcar notificación como leída:", error)
@@ -157,7 +164,9 @@ const register = async (username, email, password) => {
   }
 
   const updatePost = (postId, updatedData) => {
-    setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, ...updatedData } : post))
+    setPosts((prev) =>
+      prev.map((post) => (post.id === postId ? { ...post, ...updatedData } : post))
+    )
   }
 
   const deletePost = (postId) => {
@@ -173,11 +182,17 @@ const register = async (username, email, password) => {
   }
 
   const updatePostLikes = (postId, liked, likes) => {
-    setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, liked, likes } : post))
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId ? { ...post, liked, likes } : post
+      )
+    )
   }
 
   const updatePostComments = (postId, commentCount) => {
-    setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, commentCount } : post))
+    setPosts((prev) =>
+      prev.map((post) => (post.id === postId ? { ...post, commentCount } : post))
+    )
   }
 
   const isAdmin = () => user?.role === "admin"
