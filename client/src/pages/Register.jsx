@@ -36,12 +36,12 @@ const Register = () => {
     }
 
     const result = await register(username, email, password)
+    console.log("Registro resultado:", result)
     if (result.success) {
       navigate("/")
     } else {
-      setError(result.message)
+      setError(result.message || "Error al registrarse")
     }
-
   }
 
   return (

@@ -3,26 +3,30 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import styles from "../styles/Admin.module.css"
+import { useNavigate } from "react-router-dom"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
 
 const AdminUsers = () => {
+  const navigate = useNavigate()
   const { isAdmin } = useAuth()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({ total: 0, pages: 1 })
   const [currentPage, setCurrentPage] = useState(1)
-  const [searchTerm, setSearchTerm] = useState("") // 👈 Nuevo estado
+  const [searchTerm, setSearchTerm] = useState("")
+
+  const admin = isAdmin()
 
   useEffect(() => {
     fetchUsers(currentPage)
   }, [currentPage])
-console.log("BASE_URL es:", BASE_URL)
 
   const fetchUsers = async (page = 1) => {
+    setLoading(true)
     try {
       const token = localStorage.getItem("token")
-const response = await fetch(`${BASE_URL}/api/admin/users?page=${page}&limit=10`, {
+      const response = await fetch(`${BASE_URL}/api/admin/users?page=${page}&limit=10`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -30,8 +34,10 @@ const response = await fetch(`${BASE_URL}/api/admin/users?page=${page}&limit=10`
 
       if (response.ok) {
         const data = await response.json()
-        setUsers(data)
-        setPagination({ total: data.length, pages: 1 }) // Ajusta si usas paginación real
+        // Aquí asumo que la API responde con este formato:
+        // { users: [...], totalUsers: number, totalPages: number }
+        setUsers(data.users)
+        setPagination({ total: data.totalUsers, pages: data.totalPages })
       } else {
         const errorText = await response.text()
         console.error("Error en la respuesta:", response.status, errorText)
@@ -50,7 +56,7 @@ const response = await fetch(`${BASE_URL}/api/admin/users?page=${page}&limit=10`
 
     try {
       const token = localStorage.getItem("token")
-const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
+      const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -74,15 +80,27 @@ const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
     return <div className={styles["admin-loading"]}>Cargando usuarios...</div>
   }
 
+  // Filtro local por username (sensible a mayúsculas/minúsculas)
   const filteredUsers = users.filter(user =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
     <div className={styles["admin-users"]}>
+      <button
+        className={styles["admin-btn"]}
+        onClick={() => navigate(-1)}
+        style={{ marginBottom: "10px" }}
+      >
+        ← Volver atrás
+      </button>
+
       <div className={styles["admin-header"]}>
         <h1>Gestión de Usuarios</h1>
         <p>Total: {pagination.total} usuarios</p>
+        <button onClick={() => fetchUsers(currentPage)} className={styles["admin-btn"]}>
+          Recargar
+        </button>
         <input
           type="text"
           placeholder="Filtrar por nombre de usuario"
@@ -119,7 +137,7 @@ const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
                   <td>{new Date(user.created_at).toLocaleDateString()}</td>
                   <td>
                     <div className={styles["user-actions"]}>
-                      {isAdmin() && user.role !== "admin" && (
+                      {admin && user.role !== "admin" && (
                         <button
                           className={`${styles["action-btn"]} ${styles["delete"]}`}
                           onClick={() => deleteUser(user.id, user.username)}

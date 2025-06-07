@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import axiosInstance from "../api/axiosInstance"
-import styles from "../styles/CreatePost.module.css" // Importamos el módulo CSS
+import styles from "../styles/CreatePost.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
 
 const CreatePost = ({ onPostCreated }) => {
   const [content, setContent] = useState("")
@@ -17,9 +17,7 @@ const CreatePost = ({ onPostCreated }) => {
   useEffect(() => {
     let timer
     if (success) {
-      timer = setTimeout(() => {
-        setSuccess(false)
-      }, 3000)
+      timer = setTimeout(() => setSuccess(false), 3000)
     }
     return () => clearTimeout(timer)
   }, [success])
@@ -49,9 +47,8 @@ const CreatePost = ({ onPostCreated }) => {
       if (image) formData.append("image", image)
 
       const res = await axiosInstance.post(`${BASE_URL}/api/posts`, formData, {
-  headers: { "Content-Type": "multipart/form-data" },
-})
-
+        headers: { "Content-Type": "multipart/form-data" },
+      })
 
       setContent("")
       setImage(null)
@@ -72,6 +69,7 @@ const CreatePost = ({ onPostCreated }) => {
       <h2>Crear Publicación</h2>
       {error && <div className={styles["create-post-error"]}>{error}</div>}
       {success && <div className={styles["create-post-success"]}>¡Publicación creada con éxito!</div>}
+
       <form onSubmit={handleSubmit} className={styles["create-post-form"]}>
         <div className={styles["form-group"]}>
           <textarea

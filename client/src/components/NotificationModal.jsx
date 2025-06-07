@@ -8,7 +8,7 @@ const NotificationModal = ({ notification, onClose, onNavigate }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (notification.type === "comment" && !notification.commentContent) {
+    if (notification?.type === "comment" && !notification.commentContent) {
       const fetchComment = async () => {
         setLoading(true);
         try {
@@ -29,9 +29,20 @@ const NotificationModal = ({ notification, onClose, onNavigate }) => {
       };
       fetchComment();
     } else {
-      setCommentContent(notification.commentContent || null);
+      setCommentContent(notification?.commentContent || null);
     }
   }, [notification]);
+
+  // Cerrar modal con tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   if (!notification) return null;
 
@@ -46,12 +57,22 @@ const NotificationModal = ({ notification, onClose, onNavigate }) => {
 
   return (
     <div className={styles["modal-backdrop"]} onClick={onClose}>
-      <div className={styles["modal-content"]} onClick={(e) => e.stopPropagation()}>
-        <button className={styles["modal-close"]} onClick={onClose}>
+      <div
+        className={styles["modal-content"]}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notification-modal-title"
+      >
+        <button
+          className={styles["modal-close"]}
+          onClick={onClose}
+          aria-label="Cerrar modal"
+        >
           &times;
         </button>
 
-        <h2>Detalle de la Notificación</h2>
+        <h2 id="notification-modal-title">Detalle de la Notificación</h2>
         <p>
           <strong>{notification.senderUsername}</strong> {getText(notification)}
         </p>
@@ -69,7 +90,10 @@ const NotificationModal = ({ notification, onClose, onNavigate }) => {
           </div>
         )}
 
-        <button className={styles["modal-action-button"]} onClick={handleNavigate}>
+        <button
+          className={styles["modal-action-button"]}
+          onClick={handleNavigate}
+        >
           Ver {notification.type === "follow" ? "perfil" : "publicación"}
         </button>
       </div>

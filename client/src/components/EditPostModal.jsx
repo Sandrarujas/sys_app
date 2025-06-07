@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import axiosInstance from "../api/axiosInstance"
+import axios from "axios"
 import styles from "../styles/EditPostModal.module.css"
+
 const BASE_URL = process.env.REACT_APP_API_URL || "";
 
 const EditPostModal = ({ isOpen, onClose, post, onPostUpdate }) => {
@@ -25,14 +26,9 @@ const EditPostModal = ({ isOpen, onClose, post, onPostUpdate }) => {
     }
   }, [post])
 
-  // Función para construir la URL completa de la imagen
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null
-
-    // Si la ruta ya es una URL completa, devolverla tal cual
     if (imagePath.startsWith("http") || imagePath.startsWith("//")) return imagePath
-
-    // Construir la URL completa
     return `${BASE_URL}${imagePath}`
   }
 
@@ -68,11 +64,14 @@ const EditPostModal = ({ isOpen, onClose, post, onPostUpdate }) => {
 
       if (image) {
         formData.append("image", image)
+        formData.append("removeImage", "false")
       } else if (!keepExistingImage && post.image) {
-        formData.append("image", "")
+        formData.append("removeImage", "true")
+      } else {
+        formData.append("removeImage", "false")
       }
 
-      const res = await axiosInstance.put(`${BASE_URL}/api/posts/${post.id}`, formData, {
+      const res = await axios.put(`${BASE_URL}/api/posts/${post.id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

@@ -5,7 +5,7 @@ import { Link } from "react-router-dom"
 import { AuthContext } from "../context/AuthContext"
 import styles from "../styles/Notifications.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
 
 const NotificationList = () => {
   const {
@@ -45,12 +45,11 @@ const NotificationList = () => {
   }
 
   const toggleDropdown = () => {
-    setShowDropdown(!showDropdown)
+    setShowDropdown((prev) => !prev)
     setError("")
   }
 
-  const getNotificationContent = (notification) => {
-    const { type, senderUsername } = notification
+  const getNotificationContent = ({ type, senderUsername }) => {
     switch (type) {
       case "like":
         return `${senderUsername} le dio like a tu publicación`
@@ -63,8 +62,7 @@ const NotificationList = () => {
     }
   }
 
-  const getNotificationLink = (notification) => {
-    const { type, postId, senderUsername } = notification
+  const getNotificationLink = ({ type, postId, senderUsername }) => {
     switch (type) {
       case "like":
       case "comment":
@@ -90,14 +88,13 @@ const NotificationList = () => {
   }
 
   const getImageUrl = (imagePath) => {
-  if (!imagePath || typeof imagePath !== "string") return "/placeholder.svg?height=40&width=40"
-  return imagePath.startsWith("http") ? imagePath : `${BASE_URL}${imagePath}`
-}
-
+    if (!imagePath || typeof imagePath !== "string") return "/placeholder.svg?height=40&width=40"
+    return imagePath.startsWith("http") ? imagePath : `${BASE_URL}${imagePath}`
+  }
 
   return (
     <div className={styles["notification-container"]}>
-      <div className={styles["notification-bell"]} onClick={toggleDropdown}>
+      <div className={styles["notification-bell"]} onClick={toggleDropdown} role="button" tabIndex={0} aria-label="Mostrar notificaciones">
         <i className="fas fa-bell"></i>
         {unreadCount > 0 && <span className={styles["notification-badge"]}>{unreadCount}</span>}
       </div>
@@ -123,14 +120,12 @@ const NotificationList = () => {
                 <Link
                   key={notification.id}
                   to={getNotificationLink(notification)}
-                  className={`${styles["notification-item"]} ${
-                    !notification.isRead ? styles["unread"] : ""
-                  }`}
+                  className={`${styles["notification-item"]} ${!notification.isRead ? styles["unread"] : ""}`}
                   onClick={() => !notification.isRead && handleMarkAsRead(notification.id)}
                 >
                   <div className={styles["notification-avatar"]}>
                     <img
-                      src={getImageUrl(notification.senderProfileImage) || "/placeholder.svg"}
+                      src={getImageUrl(notification.senderProfileImage)}
                       alt={notification.senderUsername}
                       className="notification-user-image"
                       onError={(e) => {

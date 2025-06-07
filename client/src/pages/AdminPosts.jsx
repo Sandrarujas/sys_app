@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react"
 import styles from "../styles/Admin.module.css"
+import { useNavigate } from "react-router-dom"
 
 const BASE_URL = process.env.REACT_APP_API_URL
 
 const AdminPosts = () => {
+  const navigate = useNavigate()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({ total: 0, pages: 1 })
@@ -52,7 +54,7 @@ const AdminPosts = () => {
         const data = await response.json()
         if (Array.isArray(data)) {
           setPosts(data)
-          setPagination({ total: data.length, pages: 1 }) // Puedes mejorar esto si el backend lo soporta
+          setPagination({ total: data.length, pages: 1 }) // Ajusta si tu backend soporta paginado real
           data.forEach(post => fetchUsername(post.user_id))
         } else {
           setPosts([])
@@ -108,6 +110,14 @@ const AdminPosts = () => {
 
   return (
     <div className={styles["admin-posts"]}>
+      <button
+        className={styles["admin-btn"]}
+        onClick={() => navigate(-1)}
+        style={{ marginBottom: "10px" }}
+      >
+        ← Volver atrás
+      </button>
+
       <div className={styles["admin-header"]}>
         <h1>Gestión de Publicaciones</h1>
         <p>Total: {pagination?.total || 0} publicaciones</p>
@@ -130,7 +140,7 @@ const AdminPosts = () => {
               const username = users[post.user_id]?.toLowerCase() || ""
               return username.includes(searchTerm.toLowerCase())
             })
-            .map((post) => (
+            .map(post => (
               <div key={post.id} className={styles["post-card"]}>
                 <div className={styles["post-header"]}>
                   <div className={styles["post-info"]}>

@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import { useLocation, Link } from "react-router-dom"
 import axios from "axios"
 import Post from "../components/Post"
+import styles from "../styles/Search.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
 
 const Search = () => {
   const location = useLocation()
@@ -36,10 +37,10 @@ const Search = () => {
           const res = await axios.get(`${BASE_URL}/api/search/posts?q=${query}`)
           setPosts(res.data)
         }
-        setLoading(false)
       } catch (error) {
         console.error("Error en búsqueda:", error)
         setError("Error al realizar la búsqueda")
+      } finally {
         setLoading(false)
       }
     }
@@ -55,7 +56,6 @@ const Search = () => {
         await axios.post(`${BASE_URL}/api/users/${userId}/follow`)
       }
 
-      // Actualizar estado local
       const updatedUsers = [...users]
       updatedUsers[index].isFollowing = !isFollowing
       setUsers(updatedUsers)
@@ -65,40 +65,50 @@ const Search = () => {
   }
 
   return (
-    <div className="search-container">
+    <div className={styles["search-container"]}>
       <h1>Resultados de búsqueda: "{query}"</h1>
 
-      <div className="search-tabs">
-        <button className={`tab-button ${activeTab === "users" ? "active" : ""}`} onClick={() => setActiveTab("users")}>
+      <div className={styles["search-tabs"]}>
+        <button
+          className={`${styles["tab-button"]} ${activeTab === "users" ? styles["active"] : ""}`}
+          onClick={() => setActiveTab("users")}
+        >
           Usuarios
         </button>
-        <button className={`tab-button ${activeTab === "posts" ? "active" : ""}`} onClick={() => setActiveTab("posts")}>
+        <button
+          className={`${styles["tab-button"]} ${activeTab === "posts" ? styles["active"] : ""}`}
+          onClick={() => setActiveTab("posts")}
+        >
           Publicaciones
         </button>
       </div>
 
       {loading ? (
-        <div className="loading">Buscando...</div>
+        <div className={styles.loading}>Buscando...</div>
       ) : error ? (
-        <div className="error">{error}</div>
+        <div className={styles.error}>{error}</div>
       ) : activeTab === "users" ? (
-        <div className="users-results">
+        <div className={styles["users-results"]}>
           {users.length > 0 ? (
             users.map((user, index) => (
-              <div key={user.id} className="user-card">
-                <Link to={`/profile/${user.username}`} className="user-info">
+              <div key={user.id} className={styles["user-card"]}>
+                <Link to={`/profile/${user.username}`} className={styles["user-info"]}>
                   <img
-                    src={user.profileImage ? `${BASE_URL}${user.profileImage}` : "/placeholder.svg?height=50&width=50"}
+                    src={
+                      user.profileImage
+                        ? `${BASE_URL}${user.profileImage}`
+                        : "/placeholder.svg?height=50&width=50"
+                    }
                     alt={user.username}
-                    className="user-image"
+                    className={styles["user-image"]}
                   />
-                  <div className="user-details">
-                    <h3 className="user-username">{user.username}</h3>
-                    <p className="user-bio">{user.bio || "Sin biografía"}</p>
+                  <div className={styles["user-details"]}>
+                    <h3 className={styles["user-username"]}>{user.username}</h3>
+                    <p className={styles["user-bio"]}>{user.bio || "Sin biografía"}</p>
                   </div>
                 </Link>
                 <button
-                  className={`follow-button ${user.isFollowing ? "following" : ""}`}
+                  className={`${styles["follow-button"]} ${user.isFollowing ? styles["following"] : ""}`}
                   onClick={() => handleFollow(user.id, user.isFollowing, index)}
                 >
                   {user.isFollowing ? "Dejar de Seguir" : "Seguir"}
@@ -106,15 +116,15 @@ const Search = () => {
               </div>
             ))
           ) : (
-            <p className="no-results">No se encontraron usuarios con "{query}"</p>
+            <p className={styles["no-results"]}>No se encontraron usuarios con "{query}"</p>
           )}
         </div>
       ) : (
-        <div className="posts-results">
+        <div className={styles["posts-results"]}>
           {posts.length > 0 ? (
             posts.map((post) => <Post key={post.id} post={post} />)
           ) : (
-            <p className="no-results">No se encontraron publicaciones con "{query}"</p>
+            <p className={styles["no-results"]}>No se encontraron publicaciones con "{query}"</p>
           )}
         </div>
       )}

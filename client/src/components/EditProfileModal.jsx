@@ -1,71 +1,73 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"
 import axiosInstance from "../api/axiosInstance"
-import styles from "../styles/EditProfileModal.module.css";
+import styles from "../styles/EditProfileModal.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL || "";
+const BASE_URL = process.env.REACT_APP_API_URL || ""
 
 const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
-  const [bio, setBio] = useState("");
-  const [profileImage, setProfileImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [bio, setBio] = useState("")
+  const [profileImage, setProfileImage] = useState(null)
+  const [previewImage, setPreviewImage] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     if (profile) {
-      setBio(profile.bio || "");
-      setPreviewImage(getImageUrl(profile.profileImage));
+      setBio(profile.bio || "")
+      setPreviewImage(getImageUrl(profile.profileImage))
     }
-  }, [profile]);
+  }, [profile])
 
   const getImageUrl = (imagePath) => {
-    if (!imagePath) return "";
-    if (imagePath.startsWith("http") || imagePath.startsWith("//")) return imagePath;
-    return `${BASE_URL}${imagePath}`;
-  };
+    if (!imagePath) return ""
+    if (imagePath.startsWith("http") || imagePath.startsWith("//")) return imagePath
+    return `${BASE_URL}${imagePath}`
+  }
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]
     if (file) {
-      setProfileImage(file);
-      setPreviewImage(URL.createObjectURL(file));
+      setProfileImage(file)
+      setPreviewImage(URL.createObjectURL(file))
     }
-  };
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+    e.preventDefault()
+    setLoading(true)
+    setError("")
 
     try {
-      const bioResponse = await axiosInstance.put(`${BASE_URL}/api/users/bio`, { bio });
+      // Actualiza la bio
+      const bioResponse = await axiosInstance.put(`${BASE_URL}/api/users/bio`, { bio })
 
-      let imageResponse = null;
+      // Si hay imagen nueva, sube
+      let imageResponse = null
       if (profileImage) {
-        const formData = new FormData();
-        formData.append("profileImage", profileImage);
+        const formData = new FormData()
+        formData.append("profileImage", profileImage)
         imageResponse = await axiosInstance.put(`${BASE_URL}/api/users/profile-image`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
-        });
+        })
       }
 
       onProfileUpdate({
         bio: bioResponse.data.bio,
         profileImage: imageResponse ? imageResponse.data.profileImage : profile.profileImage,
-      });
+      })
 
-      onClose();
+      onClose()
     } catch (error) {
-      console.error("Error al actualizar perfil:", error);
-      setError("Error al actualizar el perfil. Inténtalo de nuevo.");
+      console.error("Error al actualizar perfil:", error)
+      setError("Error al actualizar el perfil. Inténtalo de nuevo.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div className={styles.modalOverlay}>
@@ -113,7 +115,7 @@ const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
         </form>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default EditProfileModal;
+export default EditProfileModal

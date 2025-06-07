@@ -1,13 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import axios from "axios"
 import { useAuth } from "../context/AuthContext"
+import { AuthContext } from "../context/AuthContext"
 import Post from "../components/Post"
 import styles from "../styles/Home.module.css"
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+
 const Home = () => {
-  const { user, updatePost, deletePost } = useAuth()
+  const { user } = useAuth()
+  const { updatePost, deletePost: deletePostFromContext } = useContext(AuthContext)
+
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -19,39 +24,38 @@ const Home = () => {
     totalPages: 0,
   })
 
-  const fetchPosts = async () => {
-    try {
-      setLoading(true)
-      const res = await axios.get(`/api/posts?page=${page}&limit=5`)
-      if (res.data && Array.isArray(res.data.posts)) {
-        setPosts(res.data.posts)
-        setPagination(res.data.pagination || pagination)
-        setError("")
-      } else {
-        setError("Respuesta inesperada del servidor")
-      }
-    } catch (err) {
-      console.error("Error fetching posts:", err)
-      setError("Error al cargar las publicaciones")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true)
+        const res = await axios.get(`${BASE_URL}/api/posts?page=${page}&limit=5`)
+        if (res.data?.posts && Array.isArray(res.data.posts)) {
+          setPosts(res.data.posts)
+          setPagination(res.data.pagination || pagination)
+          setError("")
+        } else {
+          setError("Respuesta inesperada del servidor")
+        }
+      } catch (error) {
+        console.error("Error fetching posts:", error)
+        setError("Error al cargar las publicaciones")
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchPosts()
   }, [page])
 
   const handlePostUpdate = (updatedPost) => {
-    setPosts((prev) =>
-      prev.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
+    setPosts((prevPosts) =>
+      prevPosts.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
     )
     updatePost(updatedPost.id, updatedPost)
   }
 
   const handlePostDelete = (postId) => {
-    setPosts((prev) => prev.filter((post) => post.id !== postId))
-    deletePost(postId)
+    setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId))
+    deletePostFromContext(postId)
     setPagination((prev) => ({
       ...prev,
       total: prev.total - 1,
@@ -66,7 +70,7 @@ const Home = () => {
     if (page < pagination.totalPages) setPage(page + 1)
   }
 
-  if (loading) {
+  if (loading && page === 1) {
     return <div className={styles.loading}>Cargando publicaciones...</div>
   }
 
@@ -74,16 +78,14 @@ const Home = () => {
     return <div className={styles.error}>{error}</div>
   }
 
-  console.log("posts:", posts)
-  console.log("pagination:", pagination)
-
   return (
     <div className={styles["home-container"]}>
       <h1>
-        <p>Bienvenido, {user?.username}</p>¿Qué hay de nuevo?
+        <p>Bienvenido, {user?.username}</p> ¿Qué hay de nuevo?
       </h1>
+
       <div className={styles["posts-container"]}>
-        {Array.isArray(posts) && posts.length > 0 ? (
+        {posts.length > 0 ? (
           posts.map((post) => (
             <Post
               key={post.id}
@@ -106,9 +108,11 @@ const Home = () => {
           >
             Anterior
           </button>
+
           <div className={styles["pagination-info"]}>
             Página {page} de {pagination.totalPages}
           </div>
+
           <button
             className={styles["pagination-button"]}
             onClick={handleNextPage}

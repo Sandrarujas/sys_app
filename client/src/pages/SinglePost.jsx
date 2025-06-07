@@ -6,7 +6,7 @@ import axios from "axios"
 import Post from "../components/Post"
 import styles from "../styles/Post.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
 
 const SinglePost = () => {
   const { id } = useParams()
@@ -21,10 +21,10 @@ const SinglePost = () => {
         setLoading(true)
         const res = await axios.get(`${BASE_URL}/api/posts/${id}`)
         setPost(res.data)
-        setLoading(false)
       } catch (error) {
         console.error("Error al cargar la publicación:", error)
         setError("No se pudo cargar la publicación. Puede que haya sido eliminada o no tengas permiso para verla.")
+      } finally {
         setLoading(false)
       }
     }

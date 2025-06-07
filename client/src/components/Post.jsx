@@ -2,16 +2,15 @@
 
 import { useState, useContext } from "react"
 import { Link } from "react-router-dom"
-import axiosInstance from "../api/axiosInstance"
+import axios from "axios"
 import { AuthContext } from "../context/AuthContext"
 import CommentList from "./CommentList"
 import EditPostModal from "./EditPostModal"
-import styles from "../styles/Post.module.css" 
+import styles from "../styles/Post.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
 
-const Post = ({ post, onPostUpdate, onPostDelete }) => {
-  // ✅ Usar AuthContext para todo
+const Post = ({ post, onPostUpdate, onPostDelete, onCommentAdded, onLikeToggled }) => {
   const {
     user,
     updatePost,
@@ -35,30 +34,37 @@ const Post = ({ post, onPostUpdate, onPostDelete }) => {
 
   const isOwner = user && post.user && user.id === post.user.id
 
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return null;
-  if (imagePath.startsWith("http")) return imagePath;
-  return `${BASE_URL}${imagePath}`;
-}
-
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith("http")) return imagePath
+    return `${BASE_URL}${imagePath}`
+  }
 
   const handleLike = async () => {
     try {
-      await axiosInstance.post(`${BASE_URL}/api/posts/${post.id}/like`)
+      await axios.post(`${BASE_URL}/api/posts/${post.id}/like`)
       const newLiked = !liked
       const newLikes = liked ? likes - 1 : likes + 1
 
-      // ✅ Actualizar estado local inmediatamente
       setLiked(newLiked)
       setLikes(newLikes)
 
-      // ✅ Actualizar contexto global
       updatePostLikes(post.id, newLiked, newLikes)
+
+      if (onPostUpdate) {
+        onPostUpdate({
+          ...post,
+          liked: newLiked,
+          likes: newLikes,
+        })
+      }
+
+      if (onLikeToggled) {
+        onLikeToggled(newLiked)
+      }
     } catch (error) {
       console.error("Error liking post:", error)
-      // Revertir cambios en caso de error
-      setLiked(liked)
-      setLikes(likes)
+      // No revertimos los estados porque ya están sin cambios aquí, solo logueamos
     }
   }
 
@@ -67,38 +73,47 @@ const getImageUrl = (imagePath) => {
     if (!commentText.trim()) return
 
     try {
-      const res = await axiosInstance.post(`${BASE_URL}/api/posts/${post.id}/comment`, {
+      const res = await axios.post(`${BASE_URL}/api/posts/${post.id}/comment`, {
         content: commentText,
       })
 
       const newCommentCount = commentCount + 1
 
-      // ✅ Actualizar estado local
       setComments([res.data, ...comments])
       setCommentCount(newCommentCount)
       setCommentText("")
 
-      // ✅ Actualizar contexto global
       updatePostComments(post.id, newCommentCount)
+
+      if (onPostUpdate) {
+        onPostUpdate({
+          ...post,
+          commentCount: newCommentCount,
+        })
+      }
+
+      if (onCommentAdded) {
+        onCommentAdded()
+      }
     } catch (error) {
       console.error("Error commenting on post:", error)
     }
   }
 
   const toggleComments = async () => {
-    setShowComments(!showComments)
+    setShowComments((prev) => !prev)
 
     if (showComments) return
 
-    if (comments.length === 0 && !showComments) {
+    if (comments.length === 0) {
       try {
         setLoadingComments(true)
-        const res = await axiosInstance.get(`${BASE_URL}/api/posts/${post.id}/comments?limit=5`)
+        const res = await axios.get(`${BASE_URL}/api/posts/${post.id}/comments?limit=5`)
         setComments(res.data.comments)
         setAllCommentsLoaded(res.data.comments.length >= res.data.pagination.total)
-        setLoadingComments(false)
       } catch (error) {
         console.error("Error loading comments:", error)
+      } finally {
         setLoadingComments(false)
       }
     }
@@ -108,13 +123,13 @@ const getImageUrl = (imagePath) => {
     try {
       setLoadingComments(true)
       const page = Math.floor(comments.length / 5) + 1
-      const res = await axiosInstance.get(`${BASE_URL}/api/posts/${post.id}/comments?page=${page}&limit=5`)
+      const res = await axios.get(`${BASE_URL}/api/posts/${post.id}/comments?page=${page}&limit=5`)
 
       setComments([...comments, ...res.data.comments])
       setAllCommentsLoaded(comments.length + res.data.comments.length >= res.data.pagination.total)
-      setLoadingComments(false)
     } catch (error) {
       console.error("Error loading more comments:", error)
+    } finally {
       setLoadingComments(false)
     }
   }
@@ -133,12 +148,10 @@ const getImageUrl = (imagePath) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar esta publicación?")) {
       try {
         setIsDeleting(true)
-        await axiosInstance.delete(`${BASE_URL}/api/posts/${post.id}`)
+        await axios.delete(`${BASE_URL}/api/posts/${post.id}`)
 
-        // ✅ Actualizar contexto global inmediatamente
         deletePostFromContext(post.id)
 
-        // ✅ Notificar al componente padre
         if (onPostDelete) {
           onPostDelete(post.id)
         }
@@ -152,20 +165,15 @@ const getImageUrl = (imagePath) => {
   }
 
   const handlePostUpdate = (updatedPost) => {
-    // ✅ Actualizar estado local
     setImageError(false)
-
-    // ✅ Actualizar contexto global
     updatePost(post.id, updatedPost)
-
-    // ✅ Notificar al componente padre
     if (onPostUpdate) {
       onPostUpdate(updatedPost)
     }
   }
 
   const toggleOptions = () => {
-    setShowOptions(!showOptions)
+    setShowOptions((prev) => !prev)
   }
 
   return (
@@ -176,15 +184,12 @@ const getImageUrl = (imagePath) => {
             src={getImageUrl(post.user.profileImage) || "/placeholder.svg?height=40&width=40"}
             alt={post.user.username}
             className={styles["post-user-image"]}
-            onError={(e) => {
-              e.target.src = "/placeholder.svg?height=40&width=40"
-            }}
+            onError={(e) => (e.target.src = "/placeholder.svg?height=40&width=40")}
           />
           <span className={styles["post-username"]}>{post.user.username}</span>
         </Link>
         <div className={styles["post-header-right"]}>
           <span className={styles["post-date"]}>{new Date(post.createdAt).toLocaleDateString()}</span>
-
           {isOwner && (
             <div className={styles["post-options"]}>
               <button className={styles["post-options-button"]} onClick={toggleOptions}>
@@ -224,7 +229,11 @@ const getImageUrl = (imagePath) => {
         )}
       </div>
       <div className={styles["post-actions"]}>
-        <button className={`${styles["post-like-button"]} ${liked ? styles.liked : ""}`} onClick={handleLike}>
+        <button
+          className={`${styles["post-like-button"]} ${liked ? styles.liked : ""}`}
+          onClick={handleLike}
+          aria-pressed={liked}
+        >
           {liked ? "❤️" : "🤍"} {likes}
         </button>
         <button className={styles["post-comment-button"]} onClick={toggleComments}>
@@ -254,7 +263,11 @@ const getImageUrl = (imagePath) => {
 
               {!allCommentsLoaded && commentCount > comments.length && (
                 <div className={styles["view-all-comments"]}>
-                  <button className={styles["view-all-comments-button"]} onClick={loadMoreComments} disabled={loadingComments}>
+                  <button
+                    className={styles["view-all-comments-button"]}
+                    onClick={loadMoreComments}
+                    disabled={loadingComments}
+                  >
                     {loadingComments
                       ? "Cargando..."
                       : `Ver más comentarios (${commentCount - comments.length} restantes)`}
