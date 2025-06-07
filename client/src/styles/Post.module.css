@@ -1,4 +1,3 @@
-/* Post Styles */
 .post {
   background-color: white;
   border-radius: 8px;
@@ -161,10 +160,10 @@
 }
 
 .comment-user-image {
-  width: 24px;
+  width: 15px;
   height: 24px;
   border-radius: 50%;
-  margin-right: 8px;
+  margin-right: 3px;
 }
 
 .comment-username {
@@ -202,7 +201,6 @@
   cursor: pointer;
 }
 
-/* Create Post Styles */
 .create-post-container {
   background-color: white;
   border-radius: 8px;
@@ -314,7 +312,6 @@
   to { opacity: 0; }
 }
 
-/* Estilos para las opciones de la publicación */
 .post-header-right {
   display: flex;
   align-items: center;
@@ -374,13 +371,13 @@
 
 
 .single-post-container {
-  max-width: 600px;      /* No muy grande */
-  min-width: 300px;      /* No muy pequeño */
-  width: 90%;            /* Responsive */
-  margin: 0 auto;        /* Centrado horizontal */
-  padding: 2rem;         /* Espacio interno */
+  max-width: 600px;      
+  min-width: 300px;      
+  width: 90%;            
+  margin: 0 auto;        
+  padding: 2rem;         
   background-color: #fff;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   border-radius: 12px;
-  margin-top: 1rem;      /* Separación desde arriba */
+  margin-top: 1rem;      
 }

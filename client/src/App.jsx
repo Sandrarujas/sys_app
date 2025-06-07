@@ -15,101 +15,127 @@ import AdminDashboard from "./pages/AdminDashboard"
 import AdminUsers from "./pages/AdminUsers"
 import AdminPosts from "./pages/AdminPosts"
 import AdminComments from "./pages/AdminComments"
+import NoAccess from "./pages/NoAccess"
+import PublicRoute from "./components/PublicRoute"
+import CatchAllRedirect from "./components/CatchAllRedirect"
 import "./App.css"
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="app">
-          <Navbar />
-          <div className="container">
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Home />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile/:username"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/create-post"
-                element={
-                  <ProtectedRoute>
-                    <CreatePost />
-                  </ProtectedRoute>
-                }
-              />
+        <Navbar />
+        <div className="container">
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
+            />
 
-               <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/users"
-                element={
-                  <AdminRoute>
-                    <AdminUsers />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/posts"
-                element={
-                  <AdminRoute>
-                    <AdminPosts />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/comments"
-                element={
-                  <AdminRoute>
-                    <AdminComments />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/search"
-                element={
-                  <ProtectedRoute>
-                    <Search />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/post/:id"
-                element={
-                  <ProtectedRoute>
-                    <SinglePost />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/notifications"
-                element={
-                  <ProtectedRoute>
-                    <Notifications />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </div>
+            <Route path="/no-access" element={<NoAccess />} />
+
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile/:username"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create-post"
+              element={
+                <ProtectedRoute>
+                  <CreatePost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <ProtectedRoute>
+                  <Search />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/post/:id"
+              element={
+                <ProtectedRoute>
+                  <SinglePost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <AdminRoute>
+                  <AdminUsers />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/posts"
+              element={
+                <AdminRoute>
+                  <AdminPosts />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/comments"
+              element={
+                <AdminRoute>
+                  <AdminComments />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="*"
+              element={
+                <CatchAllRedirect />
+              }
+            />
+
+          </Routes>
         </div>
       </Router>
     </AuthProvider>

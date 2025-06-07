@@ -1,5 +1,3 @@
-/* Navbar Styles */
-/* Estilos globales */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
 
@@ -23,6 +21,7 @@ a {
 button {
   cursor: pointer;
 }
+
 .navbar {
   background-color: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -75,33 +74,75 @@ button {
   border-radius: 4px;
   font-weight: 500;
   cursor: pointer;
+  margin-left: 20px;
 }
 
 .navbar-button:hover {
   background-color: rgb(32, 124, 105);
 }
 
-/* Search Styles */
-.search-form {
-  display: flex;
-  margin: 0 20px;
-  flex: 1;
-  max-width: 400px;
-}
-
-.search-input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #dddfe2;
-  border-radius: 20px 0 0 20px;
-  font-size: 14px;
-}
-
-.search-button {
-  background-color: rgb(32, 124, 105);
-  color: white;
+.navbar-toggle {
+  display: none;
+  font-size: 24px;
+  background: none;
   border: none;
-  padding: 3px 12px;
-  border-radius: 0 20px 20px 0;
-  font-size: 14px;
+  color: #65676b;
+}
+
+@media (max-width: 900px) {
+  .navbar-container {
+    padding: 10px 15px;
+  }
+
+  .navbar-menu {
+    position: fixed;
+    top: 60px;
+    right: 0;
+    background: white;
+    height: calc(100vh - 60px);
+    width: 200px;
+    flex-direction: column;
+    padding-top: 20px;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 999;
+  }
+  .navbar-menu.active {
+    transform: translateX(0);
+  }
+
+  .navbar-item {
+    margin: 15px 0;
+    margin-left: 0;
+    padding-left: 20px;
+  }
+
+  .navbar-button {
+    margin-left: 20px;
+  }
+
+  .navbar-toggle {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-logo {
+    font-size: 20px;
+    letter-spacing: 2px;
+  }
+
+  .navbar-menu {
+    width: 180px;
+  }
+
+  .navbar-item {
+    padding-left: 15px;
+  }
+
+  .navbar-button {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
 }
