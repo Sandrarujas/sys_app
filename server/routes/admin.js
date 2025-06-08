@@ -5,23 +5,20 @@ const adminController = require("../controllers/adminController")
 const { authenticateToken } = require("../middleware/auth")
 const { adminAuth, superAdminAuth } = require("../middleware/admin")
 
-// Middleware para autenticación y roles admin/moderator
+// Aplica solo la autenticación para todas las rutas
 router.use(authenticateToken)
-router.use(adminAuth)
 
-// Dashboard
-router.get("/dashboard/stats", adminController.getDashboardStats)
+// Para las rutas que requieren admin o moderator, usar adminAuth explícitamente en cada ruta
+router.get("/dashboard/stats", adminAuth, adminController.getDashboardStats)
 
-// Usuarios
-router.get("/users", adminController.getAllUsers)
+router.get("/users", adminAuth, adminController.getAllUsers)
+// Para eliminar usuario, se requiere superAdminAuth (admin exclusivo)
 router.delete("/users/:userId", superAdminAuth, adminController.deleteUser)
 
-// Posts
-router.get("/posts", adminController.getAllPosts)
-router.delete("/posts/:postId", adminController.deletePost)
+router.get("/posts", adminAuth, adminController.getAllPosts)
+router.delete("/posts/:postId", adminAuth, adminController.deletePost)
 
-// Comentarios
-router.get("/comments", adminController.getAllComments)
-router.delete("/comments/:commentId", adminController.deleteComment)
+router.get("/comments", adminAuth, adminController.getAllComments)
+router.delete("/comments/:commentId", adminAuth, adminController.deleteComment)
 
 module.exports = router
