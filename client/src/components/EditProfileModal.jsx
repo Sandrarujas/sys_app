@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import axiosInstance from "../api/axiosInstances"
 import styles from "../styles/EditProfileModal.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL || ""
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
 
 const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
   const [bio, setBio] = useState("")
@@ -17,6 +17,8 @@ const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
     if (profile) {
       setBio(profile.bio || "")
       setPreviewImage(getImageUrl(profile.profileImage))
+      setProfileImage(null) // Reset file input on profile change
+      setError("")
     }
   }, [profile])
 
@@ -40,10 +42,9 @@ const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
     setError("")
 
     try {
-      // Actualiza la bio
+      // Actualizar bio
       const bioResponse = await axiosInstance.put(`${BASE_URL}/api/users/bio`, { bio })
 
-      // Si hay imagen nueva, sube
       let imageResponse = null
       if (profileImage) {
         const formData = new FormData()
@@ -61,7 +62,7 @@ const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
       onClose()
     } catch (error) {
       console.error("Error al actualizar perfil:", error)
-      setError("Error al actualizar el perfil. Inténtalo de nuevo.")
+      setError(error.response?.data?.message || "Error al actualizar el perfil. Inténtalo de nuevo.")
     } finally {
       setLoading(false)
     }
@@ -74,7 +75,7 @@ const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
       <div className={styles.editProfileModal}>
         <div className={styles.modalHeader}>
           <h2>Editar Perfil</h2>
-          <button className={styles.closeButton} onClick={onClose}>
+          <button className={styles.closeButton} onClick={onClose} disabled={loading}>
             &times;
           </button>
         </div>
@@ -89,7 +90,7 @@ const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
               alt="Vista previa"
               className={styles.previewImage}
             />
-            <input type="file" accept="image/*" onChange={handleImageChange} />
+            <input type="file" accept="image/*" onChange={handleImageChange} disabled={loading} />
           </div>
 
           <div>
@@ -100,6 +101,7 @@ const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
               placeholder="Escribe algo sobre ti..."
               rows={4}
               maxLength={500}
+              disabled={loading}
             />
             <small>{bio.length}/500 caracteres</small>
           </div>

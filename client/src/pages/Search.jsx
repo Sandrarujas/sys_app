@@ -1,68 +1,68 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useLocation, Link } from "react-router-dom"
-import axiosInstance from "../api/axiosInstances"
-import Post from "../components/Post"
-import styles from "../styles/Search.module.css"
-
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
+import { useState, useEffect } from "react";
+import { useLocation, Link } from "react-router-dom";
+import axiosInstance from "../api/axiosInstances"; 
+import Post from "../components/Post";
+import styles from "../styles/Search.module.css";
 
 const Search = () => {
-  const location = useLocation()
-  const searchParams = new URLSearchParams(location.search)
-  const query = searchParams.get("q") || ""
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const query = searchParams.get("q") || "";
 
-  const [activeTab, setActiveTab] = useState("users")
-  const [users, setUsers] = useState([])
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [activeTab, setActiveTab] = useState("users");
+  const [users, setUsers] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchSearchResults = async () => {
       if (!query) {
-        setLoading(false)
-        return
+        setLoading(false);
+        setUsers([]);
+        setPosts([]);
+        return;
       }
 
-      setLoading(true)
-      setError("")
+      setLoading(true);
+      setError("");
 
       try {
         if (activeTab === "users") {
-          const res = await axiosInstance.get(`${BASE_URL}/api/search/users?q=${query}`)
-          setUsers(res.data)
+          const res = await axiosInstance.get(`/api/search/users?q=${encodeURIComponent(query)}`);
+          setUsers(res.data);
         } else {
-          const res = await axiosInstance.get(`${BASE_URL}/api/search/posts?q=${query}`)
-          setPosts(res.data)
+          const res = await axiosInstance.get(`/api/search/posts?q=${encodeURIComponent(query)}`);
+          setPosts(res.data);
         }
       } catch (error) {
-        console.error("Error en búsqueda:", error)
-        setError("Error al realizar la búsqueda")
+        console.error("Error en búsqueda:", error);
+        setError("Error al realizar la búsqueda");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchSearchResults()
-  }, [query, activeTab])
+    fetchSearchResults();
+  }, [query, activeTab]);
 
   const handleFollow = async (userId, isFollowing, index) => {
     try {
       if (isFollowing) {
-        await axiosInstance.delete(`${BASE_URL}/api/users/${userId}/unfollow`)
+        await axiosInstance.delete(`/api/users/${userId}/unfollow`);
       } else {
-        await axiosInstance.post(`${BASE_URL}/api/users/${userId}/follow`)
+        await axiosInstance.post(`/api/users/${userId}/follow`);
       }
 
-      const updatedUsers = [...users]
-      updatedUsers[index].isFollowing = !isFollowing
-      setUsers(updatedUsers)
+      const updatedUsers = [...users];
+      updatedUsers[index].isFollowing = !isFollowing;
+      setUsers(updatedUsers);
     } catch (error) {
-      console.error("Error al seguir/dejar de seguir:", error)
+      console.error("Error al seguir/dejar de seguir:", error);
     }
-  }
+  };
 
   return (
     <div className={styles["search-container"]}>
@@ -96,7 +96,9 @@ const Search = () => {
                   <img
                     src={
                       user.profileImage
-                        ? `${BASE_URL}${user.profileImage}`
+                        ? user.profileImage.startsWith("http")
+                          ? user.profileImage
+                          : `${process.env.REACT_APP_API_BASE_URL}${user.profileImage}`
                         : "/placeholder.svg?height=50&width=50"
                     }
                     alt={user.username}
@@ -108,7 +110,9 @@ const Search = () => {
                   </div>
                 </Link>
                 <button
-                  className={`${styles["follow-button"]} ${user.isFollowing ? styles["following"] : ""}`}
+                  className={`${styles["follow-button"]} ${
+                    user.isFollowing ? styles["following"] : ""
+                  }`}
                   onClick={() => handleFollow(user.id, user.isFollowing, index)}
                 >
                   {user.isFollowing ? "Dejar de Seguir" : "Seguir"}
@@ -129,7 +133,7 @@ const Search = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Search
+export default Search;

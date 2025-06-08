@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
-import axiosInstance from "../api/axiosInstances";
+import axiosInstance from "../api/axiosInstances"; 
 import { AuthContext } from "../context/AuthContext";
 import Post from "../components/Post";
 import EditProfileModal from "../components/EditProfileModal";
 
 import styles from "../styles/Profile.module.css";
-
-const BASE_URL = "http://localhost:5000"; 
 
 const Profile = () => {
   const { username } = useParams();
@@ -25,19 +23,19 @@ const Profile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      setLoading(true);
       try {
-        const res = await axiosInstance.get(`${BASE_URL}/api/users/${username}`);
+        const res = await axiosInstance.get(`/api/users/${encodeURIComponent(username)}`);
         setProfile(res.data);
         setIsFollowing(res.data.isFollowing);
 
-        const postsRes = await axiosInstance.get(`${BASE_URL}/api/posts/user/${username}`);
+        const postsRes = await axiosInstance.get(`/api/posts/user/${encodeURIComponent(username)}`);
         setPosts(postsRes.data);
-
-        setLoading(false);
       } catch (error) {
         setError("Error al cargar el perfil");
-        setLoading(false);
         console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -47,36 +45,36 @@ const Profile = () => {
   const handleFollow = async () => {
     try {
       if (isFollowing) {
-        await axiosInstance.delete(`${BASE_URL}/api/users/${profile.id}/unfollow`);
+        await axiosInstance.delete(`/api/users/${profile.id}/unfollow`);
       } else {
-        await axiosInstance.post(`${BASE_URL}/api/users/${profile.id}/follow`);
+        await axiosInstance.post(`/api/users/${profile.id}/follow`);
       }
       setIsFollowing(!isFollowing);
-      setProfile({
-        ...profile,
-        followers: isFollowing ? profile.followers - 1 : profile.followers + 1,
-      });
+      setProfile((prev) => ({
+        ...prev,
+        followers: isFollowing ? prev.followers - 1 : prev.followers + 1,
+      }));
     } catch (error) {
       console.error("Error following/unfollowing user:", error);
     }
   };
 
-const handleProfileUpdate = (updatedData) => {
-  setProfile((prevProfile) => ({
-    ...prevProfile,
-    ...updatedData,
-  }));
+  const handleProfileUpdate = (updatedData) => {
+    setProfile((prevProfile) => ({
+      ...prevProfile,
+      ...updatedData,
+    }));
 
-  if (updatedData.profileImage) {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.user && post.user.id === profile.id
-          ? { ...post, user: { ...post.user, profileImage: updatedData.profileImage } }
-          : post
-      )
-    );
-  }
-};
+    if (updatedData.profileImage) {
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.user && post.user.id === profile.id
+            ? { ...post, user: { ...post.user, profileImage: updatedData.profileImage } }
+            : post
+        )
+      );
+    }
+  };
 
   const handlePostUpdate = (updatedPost) => {
     console.log("Actualizando publicación:", updatedPost);
@@ -91,33 +89,36 @@ const handleProfileUpdate = (updatedData) => {
   };
 
   const incrementProfileComments = () => {
-  setProfile((prev) => ({
-    ...prev,
-    comments: prev.comments + 1,
-  }))
-};
+    setProfile((prev) => ({
+      ...prev,
+      comments: prev.comments + 1,
+    }));
+  };
 
-
-const incrementProfileLikes = (liked) => {
-  setProfile((prev) => ({
-    ...prev,
-    likes: prev.likes + (liked ? 1 : -1),
-  }));
-};
-
+  const incrementProfileLikes = (liked) => {
+    setProfile((prev) => ({
+      ...prev,
+      likes: prev.likes + (liked ? 1 : -1),
+    }));
+  };
 
   if (loading) return <div className={styles["loading"]}>Cargando perfil...</div>;
   if (error) return <div className={styles["error"]}>{error}</div>;
   if (!profile) return <div className={styles["error"]}>Usuario no encontrado</div>;
+
+  // Función para evitar concatenar base URL dos veces
+  const getProfileImageUrl = (url) => {
+    if (!url) return "/placeholder.svg?height=150&width=150";
+    if (url.startsWith("http")) return url;
+    return `${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000"}${url}`;
+  };
 
   return (
     <div className={styles["profile-container"]}>
       <div className={styles["profile-header"]}>
         <div className={styles["profile-image-container"]}>
           <img
-            src={
-              profile.profileImage ? `${BASE_URL}${profile.profileImage}` : "/placeholder.svg?height=150&width=150"
-            }
+            src={getProfileImageUrl(profile.profileImage)}
             alt={profile.username}
             className={styles["profile-image"]}
           />
@@ -176,8 +177,14 @@ const incrementProfileLikes = (liked) => {
         <div className={styles["posts-container"]}>
           {posts.length > 0 ? (
             posts.map((post) => (
-              <Post key={post.id} post={post} onPostUpdate={handlePostUpdate} onPostDelete={handlePostDelete} onCommentAdded={incrementProfileComments} 
-              onLikeToggled={incrementProfileLikes} />
+              <Post
+                key={post.id}
+                post={post}
+                onPostUpdate={handlePostUpdate}
+                onPostDelete={handlePostDelete}
+                onCommentAdded={incrementProfileComments}
+                onLikeToggled={incrementProfileLikes}
+              />
             ))
           ) : (
             <p>No hay publicaciones disponibles.</p>

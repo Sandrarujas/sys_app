@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import axiosInstance from "../api/axiosInstances"
 import styles from "../styles/EditPostModal.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL || "";
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
 
 const EditPostModal = ({ isOpen, onClose, post, onPostUpdate }) => {
   const [content, setContent] = useState("")
@@ -23,6 +23,8 @@ const EditPostModal = ({ isOpen, onClose, post, onPostUpdate }) => {
         setPreviewImage("")
       }
       setKeepExistingImage(!!post.image)
+      setImage(null) // Reset file input on new post load
+      setError("")
     }
   }, [post])
 
@@ -99,7 +101,7 @@ const EditPostModal = ({ isOpen, onClose, post, onPostUpdate }) => {
       <div className={styles["edit-post-modal"]}>
         <div className={styles["modal-header"]}>
           <h2>Editar Publicación</h2>
-          <button className={styles["close-button"]} onClick={onClose}>
+          <button className={styles["close-button"]} onClick={onClose} disabled={loading}>
             &times;
           </button>
         </div>
@@ -114,7 +116,8 @@ const EditPostModal = ({ isOpen, onClose, post, onPostUpdate }) => {
               onChange={(e) => setContent(e.target.value)}
               placeholder="¿Qué estás pensando?"
               rows={4}
-            ></textarea>
+              disabled={loading}
+            />
           </div>
 
           <div className={styles["form-group"]}>
@@ -130,12 +133,18 @@ const EditPostModal = ({ isOpen, onClose, post, onPostUpdate }) => {
                   type="button"
                   className={styles["remove-image-button"]}
                   onClick={handleRemoveImage}
+                  disabled={loading}
                 >
                   Eliminar imagen
                 </button>
               </div>
             ) : (
-              <input type="file" accept="image/*" onChange={handleImageChange} />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={loading}
+              />
             )}
           </div>
 

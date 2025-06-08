@@ -1,43 +1,45 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
-import axiosInstance from "../api/axiosInstances"
-import Post from "../components/Post"
-import styles from "../styles/Post.module.css"
-
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000"
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import axiosInstance from "../api/axiosInstances"; 
+import Post from "../components/Post";
+import styles from "../styles/Post.module.css";
 
 const SinglePost = () => {
-  const { id } = useParams()
-  const [post, setPost] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const navigate = useNavigate()
+  const { id } = useParams();
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        setLoading(true)
-        const res = await axiosInstance.get(`${BASE_URL}/api/posts/${id}`)
-        setPost(res.data)
+        setLoading(true);
+        // Usa ruta relativa porque axiosInstance ya tiene baseURL
+        const res = await axiosInstance.get(`/api/posts/${id}`);
+        setPost(res.data);
+        setError("");
       } catch (error) {
-        console.error("Error al cargar la publicación:", error)
-        setError("No se pudo cargar la publicación. Puede que haya sido eliminada o no tengas permiso para verla.")
+        console.error("Error al cargar la publicación:", error);
+        setError(
+          "No se pudo cargar la publicación. Puede que haya sido eliminada o no tengas permiso para verla."
+        );
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchPost()
-  }, [id])
+    fetchPost();
+  }, [id]);
 
   const handleBack = () => {
-    navigate(-1)
-  }
+    navigate(-1);
+  };
 
   if (loading) {
-    return <div className="loading">Cargando publicación...</div>
+    return <div className="loading">Cargando publicación...</div>;
   }
 
   if (error) {
@@ -48,7 +50,7 @@ const SinglePost = () => {
           Volver
         </button>
       </div>
-    )
+    );
   }
 
   if (!post) {
@@ -59,7 +61,7 @@ const SinglePost = () => {
           Volver
         </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -72,7 +74,7 @@ const SinglePost = () => {
       </div>
       <Post post={post} />
     </div>
-  )
-}
+  );
+};
 
-export default SinglePost
+export default SinglePost;
