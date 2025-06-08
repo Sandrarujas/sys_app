@@ -355,6 +355,43 @@ const deletePost = async (req, res) => {
   }
 }
 
+
+const commentPost = async (req, res) => {
+  const { id: postId } = req.params;
+  const userId = req.user.id;
+  const { content } = req.body;
+
+  if (!content || content.trim() === "") {
+    return res.status(400).json({ message: "El comentario no puede estar vacío" });
+  }
+
+  try {
+    // Verificar que la publicación existe
+    const [postExists] = await pool.query("SELECT id FROM posts WHERE id = ?", [postId]);
+    if (postExists.length === 0) {
+      return res.status(404).json({ message: "Publicación no encontrada" });
+    }
+
+    // Insertar comentario
+    const [result] = await pool.query(
+      "INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)",
+      [postId, userId, content]
+    );
+
+    res.status(201).json({
+      id: result.insertId,
+      postId,
+      userId,
+      content,
+      createdAt: new Date(),
+    });
+  } catch (error) {
+    console.error("Error al comentar publicación:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+};
+
+
 // Actualizar una publicación con opción de cambiar imagen
 const updatePost = async (req, res) => {
   const { id } = req.params
@@ -430,4 +467,5 @@ module.exports = {
   unlikePost,
   deletePost,
   updatePost,
+  commentPost,
 }
