@@ -35,13 +35,21 @@ const AdminUsers = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("Respuesta completa del backend:", data);
+
         if (Array.isArray(data.users)) {
-          setUsers(data.users);
+          const safeUsers = data.users.filter(user => user && user.username);
+          console.log("Usuarios filtrados (válidos):", safeUsers);
+          setUsers(safeUsers);
         } else {
           setUsers([]);
           console.warn("La API no devolvió un array de usuarios");
         }
-        setPagination({ total: data.totalUsers || 0, pages: data.totalPages || 1 });
+
+        setPagination({
+          total: data.totalUsers || 0,
+          pages: data.totalPages || 1,
+        });
       } else {
         const errorText = await response.text();
         console.error("Error en la respuesta:", response.status, errorText);
@@ -92,12 +100,11 @@ const AdminUsers = () => {
     return <div className={styles["admin-loading"]}>Cargando usuarios...</div>;
   }
 
-  const filteredUsers = (Array.isArray(users) ? users : []).filter(
-  (user) =>
-    user &&
-    user.username &&
-    user.username.toLowerCase().includes(searchTerm.toLowerCase())
-);
+  const filteredUsers = (Array.isArray(users) ? users : [])
+    .filter((user) => user && typeof user.username === "string")
+    .filter((user) =>
+      user.username.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   return (
     <div className={styles["admin-users"]}>
@@ -138,31 +145,33 @@ const AdminUsers = () => {
           </thead>
           <tbody>
             {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.id}</td>
-                  <td>{user.username}</td>
-                  <td>{user.email}</td>
-                  <td>
-                    <span className={`${styles["role-badge"]} ${styles[user.role]}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td>{new Date(user.created_at).toLocaleDateString()}</td>
-                  <td>
-                    <div className={styles["user-actions"]}>
-                      {admin && user.role !== "admin" && (
-                        <button
-                          className={`${styles["action-btn"]} ${styles["delete"]}`}
-                          onClick={() => deleteUser(user.id, user.username)}
-                        >
-                          Eliminar
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+              filteredUsers.map((user) =>
+                user ? (
+                  <tr key={user.id}>
+                    <td>{user.id}</td>
+                    <td>{user.username}</td>
+                    <td>{user.email}</td>
+                    <td>
+                      <span className={`${styles["role-badge"]} ${styles[user.role]}`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td>{new Date(user.created_at).toLocaleDateString()}</td>
+                    <td>
+                      <div className={styles["user-actions"]}>
+                        {admin && user.role !== "admin" && (
+                          <button
+                            className={`${styles["action-btn"]} ${styles["delete"]}`}
+                            onClick={() => deleteUser(user.id, user.username)}
+                          >
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : null
+              )
             ) : (
               <tr>
                 <td colSpan="6">No se encontraron usuarios con ese nombre.</td>
