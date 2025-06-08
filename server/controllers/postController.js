@@ -379,7 +379,7 @@ const updatePost = async (req, res) => {
     if (req.file) {
       // Subir la nueva imagen a Cloudinary
       const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "tu_carpeta_en_cloudinary",
+        folder: "Carpeta de fotos",
       })
 
       // Borrar archivo local temporal
