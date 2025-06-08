@@ -7,7 +7,6 @@ import { AuthContext } from "../context/AuthContext"
 import Post from "../components/Post"
 import styles from "../styles/Home.module.css"
 
-const BASE_URL = process.env.REACT_PUBLIC_API_URL 
 
 const Home = () => {
   const { user } = useAuth()
