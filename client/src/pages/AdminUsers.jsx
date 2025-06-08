@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import styles from "../styles/Admin.module.css";
 import { useNavigate } from "react-router-dom";
 
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 const AdminUsers = () => {
   const navigate = useNavigate();

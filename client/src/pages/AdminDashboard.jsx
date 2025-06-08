@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext"
 import { Link } from "react-router-dom"
 import styles from "../styles/Admin.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 const AdminDashboard = () => {
   const { user } = useAuth()

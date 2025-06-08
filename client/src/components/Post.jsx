@@ -9,8 +9,7 @@ import EditPostModal from "./EditPostModal"
 import styles from "../styles/Post.module.css"
 
 
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
-
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 const Post = ({ post, onPostUpdate, onPostDelete, onCommentAdded, onLikeToggled }) => {
   const {

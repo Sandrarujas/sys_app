@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import axiosInstance from "../api/axiosInstances"
 import styles from "../styles/EditProfileModal.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 
 const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
