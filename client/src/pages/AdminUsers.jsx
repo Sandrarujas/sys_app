@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import styles from "../styles/Admin.module.css"
 import { useNavigate } from "react-router-dom"
@@ -18,8 +18,12 @@ const AdminUsers = () => {
 
   const admin = isAdmin()
 
-  // Defino fetchUsers antes del useEffect y con useCallback para mejor manejo
-  const fetchUsers = useCallback(async (page = 1) => {
+  useEffect(() => {
+    fetchUsers(currentPage)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage])
+
+  const fetchUsers = async (page = 1) => {
     setLoading(true)
     try {
       const token = localStorage.getItem("token")
@@ -31,24 +35,27 @@ const AdminUsers = () => {
 
       if (response.ok) {
         const data = await response.json()
-        // Asumo que la API responde con esta estructura:
-        // { users: [...], totalUsers: number, totalPages: number }
-        setUsers(data.users)
-        setPagination({ total: data.totalUsers, pages: data.totalPages })
+        if (Array.isArray(data.users)) {
+          setUsers(data.users)
+        } else {
+          setUsers([])
+          console.warn("La API no devolvió un array de usuarios")
+        }
+        setPagination({ total: data.totalUsers || 0, pages: data.totalPages || 1 })
       } else {
         const errorText = await response.text()
         console.error("Error en la respuesta:", response.status, errorText)
+        setUsers([])
+        setPagination({ total: 0, pages: 1 })
       }
     } catch (error) {
       console.error("Error fetching users:", error)
+      setUsers([])
+      setPagination({ total: 0, pages: 1 })
     } finally {
       setLoading(false)
     }
-  }, [])
-
-  useEffect(() => {
-    fetchUsers(currentPage)
-  }, [currentPage, fetchUsers])
+  }
 
   const deleteUser = async (userId, username) => {
     if (!window.confirm(`¿Estás seguro de que quieres eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) {
@@ -81,8 +88,8 @@ const AdminUsers = () => {
     return <div className={styles["admin-loading"]}>Cargando usuarios...</div>
   }
 
-  // Filtro local por username (sensible a mayúsculas/minúsculas)
-  const filteredUsers = users.filter(user =>
+  // Protección para que users siempre sea un array
+  const filteredUsers = (users || []).filter(user =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -162,7 +169,7 @@ const AdminUsers = () => {
       <div className={styles["pagination"]}>
         <button
           disabled={currentPage === 1}
-          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+          onClick={() => setCurrentPage(currentPage - 1)}
         >
           Anterior
         </button>
