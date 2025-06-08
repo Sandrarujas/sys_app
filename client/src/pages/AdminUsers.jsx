@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "../context/AuthContext"
 import styles from "../styles/Admin.module.css"
 import { useNavigate } from "react-router-dom"
 
-const BASE_URL = process.env.REACT_APP_API_URL 
+const BASE_URL = process.env.REACT_APP_API_URL
 
 const AdminUsers = () => {
   const navigate = useNavigate()
@@ -18,11 +18,8 @@ const AdminUsers = () => {
 
   const admin = isAdmin()
 
-  useEffect(() => {
-    fetchUsers(currentPage)
-  }, [currentPage])
-
-  const fetchUsers = async (page = 1) => {
+  // Defino fetchUsers antes del useEffect y con useCallback para mejor manejo
+  const fetchUsers = useCallback(async (page = 1) => {
     setLoading(true)
     try {
       const token = localStorage.getItem("token")
@@ -34,7 +31,7 @@ const AdminUsers = () => {
 
       if (response.ok) {
         const data = await response.json()
-        // Aquí asumo que la API responde con este formato:
+        // Asumo que la API responde con esta estructura:
         // { users: [...], totalUsers: number, totalPages: number }
         setUsers(data.users)
         setPagination({ total: data.totalUsers, pages: data.totalPages })
@@ -47,7 +44,11 @@ const AdminUsers = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchUsers(currentPage)
+  }, [currentPage, fetchUsers])
 
   const deleteUser = async (userId, username) => {
     if (!window.confirm(`¿Estás seguro de que quieres eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) {
@@ -161,7 +162,7 @@ const AdminUsers = () => {
       <div className={styles["pagination"]}>
         <button
           disabled={currentPage === 1}
-          onClick={() => setCurrentPage(currentPage - 1)}
+          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
         >
           Anterior
         </button>
