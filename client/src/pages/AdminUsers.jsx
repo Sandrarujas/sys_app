@@ -100,11 +100,12 @@ const AdminUsers = () => {
     return <div className={styles["admin-loading"]}>Cargando usuarios...</div>;
   }
 
-  const filteredUsers = (Array.isArray(users) ? users : [])
-    .filter((user) => user && typeof user.username === "string")
-    .filter((user) =>
-      user.username.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+const filteredUsers = (Array.isArray(users) ? users : [])
+  .filter((user) => user && typeof user.username === "string")
+  .filter((user) =>
+    user.username.toLowerCase().includes((searchTerm || "").toLowerCase())
+  );
+
 
   return (
     <div className={styles["admin-users"]}>
