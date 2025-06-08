@@ -5,7 +5,7 @@ import { Link } from "react-router-dom"
 import { AuthContext } from "../context/AuthContext"
 import styles from "../styles/Notifications.module.css"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.process.env.REACT_APP_API_BASE_URL;
 
 const NotificationList = () => {
   const {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styles from "../styles/NotificationModal.module.css";
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.process.env.REACT_APP_API_BASE_URL;
 
 const NotificationModal = ({ notification, onClose, onNavigate }) => {
   const [commentContent, setCommentContent] = useState(null);

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import styles from "../styles/Admin.module.css"
 import { useNavigate } from "react-router-dom"
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.process.env.REACT_APP_API_BASE_URL;
 
 const AdminPosts = () => {
   const navigate = useNavigate()
