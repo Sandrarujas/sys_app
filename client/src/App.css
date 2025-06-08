@@ -1010,27 +1010,6 @@ button {
   gap: 20px;
 }
 
-@media (max-width: 768px) {
-  .profile-header {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .profile-image-container {
-    margin-right: 0;
-    margin-bottom: 20px;
-  }
-
-  .profile-stats {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .profile-stat {
-    margin: 0 15px 15px;
-  }
-}
 
 /* Modal de edición de perfil */
 .modal-overlay {
@@ -1161,119 +1140,6 @@ textarea {
   border-radius: 4px;
   margin-bottom: 20px;
 }
-
-/* Responsive Styles */
-@media (max-width: 768px) {
-  .navbar-container {
-    flex-direction: column;
-    padding: 10px;
-  }
-
-  .navbar-logo {
-    margin-bottom: 10px;
-  }
-
-  .search-form {
-    margin: 10px 0;
-    width: 100%;
-    max-width: none;
-  }
-
-  .navbar-menu {
-    width: 100%;
-    justify-content: space-around;
-    margin-top: 10px;
-  }
-
-  .navbar-item {
-    margin-left: 0;
-  }
-
-  .profile-header {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 15px;
-  }
-
-  .profile-image-container {
-    margin-right: 0;
-    margin-bottom: 20px;
-  }
-
-  .profile-username-container {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .profile-username {
-    margin-right: 0;
-  }
-
-  .profile-stats {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .profile-stat {
-    margin: 0 10px 15px;
-    min-width: 80px;
-  }
-
-  .user-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .user-info {
-    margin-bottom: 10px;
-  }
-
-  .follow-button {
-    align-self: flex-end;
-  }
-
-  .edit-profile-modal {
-    width: 95%;
-    padding: 15px;
-  }
-
-  .profile-image-upload input[type="file"] {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .profile-stat {
-    margin: 0 5px 10px;
-    min-width: 70px;
-  }
-
-  .stat-count {
-    font-size: 16px;
-  }
-
-  .stat-label {
-    font-size: 12px;
-  }
-
-  .profile-bio {
-    padding: 10px;
-  }
-
-  .edit-profile-modal {
-    padding: 10px;
-  }
-
-  .modal-header h2 {
-    font-size: 18px;
-  }
-
-  .preview-image {
-    width: 120px;
-    height: 120px;
-  }
-
 
   /*CSS Modal editar post*/
 
@@ -1796,39 +1662,6 @@ textarea {
   background-color: rgb(32, 124, 105);
 }
 
-@media (max-width: 768px) {
-  .conversation-container {
-    padding: 10px;
-    height: calc(100vh - 100px);
-  }
-  
-  .message-bubble {
-    max-width: 85%;
-  }
-}
-
-
-.profile-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.message-button {
-  background-color: #f1f1f1;
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 8px 16px;
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-block;
-}
-
-.message-button:hover {
-  background-color: #e4e6eb;
-}
-}
 
 /**CSS del página principal**/
 
