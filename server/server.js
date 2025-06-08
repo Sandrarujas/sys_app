@@ -2,7 +2,7 @@ const express = require("express")
 const cors = require("cors")
 const path = require("path")
 const fs = require("fs")
-require("dotenv").config()
+require('dotenv').config()
 const errorHandler = require("./middleware/errorHandler")
 
 const app = express()

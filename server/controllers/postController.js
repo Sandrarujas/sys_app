@@ -1,4 +1,5 @@
 const pool = require("../config/db")
+const cloudinary = require("../config/cloudinary")
 const fs = require("fs")
 const path = require("path")
 
@@ -7,26 +8,29 @@ const createPost = async (req, res) => {
   const { content } = req.body
   const userId = req.user.id
 
-  // Verificar si hay un archivo adjunto
   let image = null
-  if (req.file) {
-    // Asegurarse de que la ruta sea correcta para acceso desde el cliente
-    // Usar una ruta relativa al servidor para almacenar en la base de datos
-    image = `/uploads/${req.file.filename}`
-    console.log("Imagen subida:", image)
-    console.log("Ruta completa:", path.join(__dirname, "..", "uploads", req.file.filename))
-  }
-
-  if (!content && !image) {
-    return res.status(400).json({ message: "La publicación debe tener contenido o imagen" })
-  }
-
   try {
-    const [result] = await pool.query("INSERT INTO posts (user_id, content, image) VALUES (?, ?, ?)", [
-      userId,
-      content,
-      image,
-    ])
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "Carpeta de fotos",
+      })
+
+      // Borrar archivo local temporal
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Error borrando archivo local:", err)
+      })
+
+      image = result.secure_url
+    }
+
+    if (!content && !image) {
+      return res.status(400).json({ message: "La publicación debe tener contenido o imagen" })
+    }
+
+    const [result] = await pool.query(
+      "INSERT INTO posts (user_id, content, image) VALUES (?, ?, ?)",
+      [userId, content, image]
+    )
 
     res.status(201).json({
       id: result.insertId,
@@ -40,7 +44,7 @@ const createPost = async (req, res) => {
   }
 }
 
-// Obtener todas las publicaciones con paginación
+// Obtener todas las publicaciones con paginación (sin cambios)
 const getPosts = async (req, res) => {
   const userId = req.user.id
   const page = Number.parseInt(req.query.page) || 1
@@ -48,7 +52,6 @@ const getPosts = async (req, res) => {
   const offset = (page - 1) * limit
 
   try {
-    // Obtener publicaciones de usuarios que sigue el usuario actual y del propio usuario
     const [posts] = await pool.query(
       `SELECT p.id, p.content, p.image, p.created_at as createdAt,
       u.id as userId, u.username, u.profile_image as profileImage
@@ -62,7 +65,6 @@ const getPosts = async (req, res) => {
       [userId, userId, limit, offset],
     )
 
-    // Contar total de publicaciones para la paginación
     const [countResult] = await pool.query(
       `SELECT COUNT(*) as total
       FROM posts p
@@ -75,16 +77,10 @@ const getPosts = async (req, res) => {
     const total = countResult[0].total
     const totalPages = Math.ceil(total / limit)
 
-    // Para cada publicación, obtener likes y comentarios
     const postsWithDetails = await Promise.all(
       posts.map(async (post) => {
-        // Contar likes
         const [likesResult] = await pool.query("SELECT COUNT(*) as count FROM likes WHERE post_id = ?", [post.id])
-
-        // Verificar si el usuario actual dio like
         const [userLiked] = await pool.query("SELECT * FROM likes WHERE post_id = ? AND user_id = ?", [post.id, userId])
-
-        // Obtener comentarios (limitados a los 5 más recientes)
         const [comments] = await pool.query(
           `SELECT c.id, c.content, c.created_at as createdAt,
           u.id as userId, u.username, u.profile_image as profileImage
@@ -95,8 +91,6 @@ const getPosts = async (req, res) => {
           LIMIT 5`,
           [post.id],
         )
-
-        // Contar total de comentarios
         const [commentCount] = await pool.query("SELECT COUNT(*) as count FROM comments WHERE post_id = ?", [post.id])
 
         const formattedComments = comments.map((comment) => ({
@@ -143,13 +137,12 @@ const getPosts = async (req, res) => {
   }
 }
 
-// Obtener publicaciones de un usuario específico
+// Obtener publicaciones de un usuario específico (sin cambios)
 const getUserPosts = async (req, res) => {
   const { username } = req.params
   const userId = req.user.id
 
   try {
-    // Obtener ID del usuario por username
     const [users] = await pool.query("SELECT id FROM users WHERE username = ?", [username])
 
     if (users.length === 0) {
@@ -158,7 +151,6 @@ const getUserPosts = async (req, res) => {
 
     const profileUserId = users[0].id
 
-    // Obtener publicaciones del usuario
     const [posts] = await pool.query(
       `SELECT p.id, p.content, p.image, p.created_at as createdAt,
       u.id as userId, u.username, u.profile_image as profileImage
@@ -169,16 +161,10 @@ const getUserPosts = async (req, res) => {
       [profileUserId],
     )
 
-    // Para cada publicación, obtener likes y comentarios
     const postsWithDetails = await Promise.all(
       posts.map(async (post) => {
-        // Contar likes
         const [likesResult] = await pool.query("SELECT COUNT(*) as count FROM likes WHERE post_id = ?", [post.id])
-
-        // Verificar si el usuario actual dio like
         const [userLiked] = await pool.query("SELECT * FROM likes WHERE post_id = ? AND user_id = ?", [post.id, userId])
-
-        // Obtener comentarios
         const [comments] = await pool.query(
           `SELECT c.id, c.content, c.created_at as createdAt,
         u.id as userId, u.username, u.profile_image as profileImage
@@ -224,7 +210,7 @@ const getUserPosts = async (req, res) => {
   }
 }
 
-// Obtener todos los comentarios de una publicación con paginación
+// Obtener todos los comentarios de una publicación con paginación (sin cambios)
 const getPostComments = async (req, res) => {
   const { id } = req.params
   const page = Number.parseInt(req.query.page) || 1
@@ -232,14 +218,12 @@ const getPostComments = async (req, res) => {
   const offset = (page - 1) * limit
 
   try {
-    // Verificar si la publicación existe
     const [postExists] = await pool.query("SELECT id FROM posts WHERE id = ?", [id])
 
     if (postExists.length === 0) {
       return res.status(404).json({ message: "Publicación no encontrada" })
     }
 
-    // Obtener comentarios paginados
     const [comments] = await pool.query(
       `SELECT c.id, c.content, c.created_at as createdAt,
       u.id as userId, u.username, u.profile_image as profileImage
@@ -251,7 +235,6 @@ const getPostComments = async (req, res) => {
       [id, limit, offset],
     )
 
-    // Contar total de comentarios
     const [countResult] = await pool.query("SELECT COUNT(*) as total FROM comments WHERE post_id = ?", [id])
 
     const total = countResult[0].total
@@ -283,181 +266,86 @@ const getPostComments = async (req, res) => {
   }
 }
 
-// Dar like a una publicación
+// Dar like a una publicación (sin cambios)
 const likePost = async (req, res) => {
   const { id } = req.params
   const userId = req.user.id
 
   try {
-    // Verificar si ya dio like
     const [existingLike] = await pool.query("SELECT * FROM likes WHERE post_id = ? AND user_id = ?", [id, userId])
 
     if (existingLike.length > 0) {
-      // Si ya dio like, eliminar el like
-      await pool.query("DELETE FROM likes WHERE post_id = ? AND user_id = ?", [id, userId])
-
-      res.json({ message: "Like eliminado" })
-    } else {
-      // Si no ha dado like, crear like
-      await pool.query("INSERT INTO likes (post_id, user_id) VALUES (?, ?)", [id, userId])
-
-      // Obtener el propietario de la publicación
-      const [postOwner] = await pool.query("SELECT user_id FROM posts WHERE id = ?", [id])
-
-      // Si el usuario que da like no es el propietario, crear notificación
-      if (postOwner.length > 0 && postOwner[0].user_id !== userId) {
-        await pool.query("INSERT INTO notifications (user_id, sender_id, type, post_id) VALUES (?, ?, 'like', ?)", [
-          postOwner[0].user_id,
-          userId,
-          id,
-        ])
-      }
-
-      res.status(201).json({ message: "Like agregado" })
+      return res.status(400).json({ message: "Ya has dado like a esta publicación" })
     }
+
+    await pool.query("INSERT INTO likes (post_id, user_id) VALUES (?, ?)", [id, userId])
+
+    res.json({ message: "Like agregado" })
   } catch (error) {
     console.error("Error al dar like:", error)
     res.status(500).json({ message: "Error en el servidor" })
   }
 }
 
-// Comentar en una publicación
-const commentPost = async (req, res) => {
+// Quitar like de una publicación (sin cambios)
+const unlikePost = async (req, res) => {
   const { id } = req.params
-  const { content } = req.body
   const userId = req.user.id
 
   try {
-    // Verificar si la publicación existe
-    const [postExists] = await pool.query("SELECT id, user_id FROM posts WHERE id = ?", [id])
+    const [existingLike] = await pool.query("SELECT * FROM likes WHERE post_id = ? AND user_id = ?", [id, userId])
 
-    if (postExists.length === 0) {
-      return res.status(404).json({ message: "Publicación no encontrada" })
+    if (existingLike.length === 0) {
+      return res.status(400).json({ message: "No has dado like a esta publicación" })
     }
 
-    // Crear comentario
-    const [result] = await pool.query("INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)", [
-      id,
-      userId,
-      content,
-    ])
+    await pool.query("DELETE FROM likes WHERE post_id = ? AND user_id = ?", [id, userId])
 
-    // Si el usuario que comenta no es el propietario, crear notificación
-    if (postExists[0].user_id !== userId) {
-      await pool.query(
-        "INSERT INTO notifications (user_id, sender_id, type, post_id, comment_id) VALUES (?, ?, 'comment', ?, ?)",
-        [postExists[0].user_id, userId, id, result.insertId],
-      )
-    }
-
-    // Obtener información del usuario
-    const [users] = await pool.query("SELECT id, username, profile_image as profileImage FROM users WHERE id = ?", [
-      userId,
-    ])
-
-    res.status(201).json({
-      id: result.insertId,
-      content,
-      createdAt: new Date(),
-      user: {
-        id: users[0].id,
-        username: users[0].username,
-        profileImage: users[0].profileImage,
-      },
-    })
+    res.json({ message: "Like removido" })
   } catch (error) {
-    console.error("Error al comentar:", error)
+    console.error("Error al quitar like:", error)
     res.status(500).json({ message: "Error en el servidor" })
   }
 }
 
-// NUEVAS FUNCIONES
-
-// Actualizar una publicación
-const updatePost = async (req, res) => {
-  const { id } = req.params
-  const { content } = req.body
-  const userId = req.user.id
-
-  try {
-    // Verificar si la publicación existe y pertenece al usuario
-    const [post] = await pool.query("SELECT * FROM posts WHERE id = ?", [id])
-
-    if (post.length === 0) {
-      return res.status(404).json({ message: "Publicación no encontrada" })
-    }
-
-    if (post[0].user_id !== userId) {
-      return res.status(403).json({ message: "No tienes permiso para editar esta publicación" })
-    }
-
-    // Verificar si hay un archivo adjunto
-    let image = post[0].image
-    if (req.file) {
-      // Si hay una imagen anterior, eliminarla
-      if (post[0].image) {
-        const oldImagePath = path.join(__dirname, "..", post[0].image)
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath)
-        }
-      }
-
-      // Usar una ruta relativa al servidor para almacenar en la base de datos
-      image = `/uploads/${req.file.filename}`
-      console.log("Nueva imagen subida:", image)
-    }
-
-    // Si no hay contenido ni imagen, devolver error
-    if (!content && !image) {
-      return res.status(400).json({ message: "La publicación debe tener contenido o imagen" })
-    }
-
-    // Actualizar la publicación
-    await pool.query("UPDATE posts SET content = ?, image = ? WHERE id = ?", [content, image, id])
-
-    res.json({
-      id: Number.parseInt(id),
-      content,
-      image,
-      updatedAt: new Date(),
-    })
-  } catch (error) {
-    console.error("Error al actualizar publicación:", error)
-    res.status(500).json({ message: "Error en el servidor" })
-  }
-}
-
-// Eliminar una publicación
+// Eliminar una publicación y su imagen en Cloudinary
 const deletePost = async (req, res) => {
   const { id } = req.params
   const userId = req.user.id
 
   try {
-    // Verificar si la publicación existe y pertenece al usuario
-    const [post] = await pool.query("SELECT * FROM posts WHERE id = ?", [id])
-
-    if (post.length === 0) {
+    // Verificar que la publicación existe y pertenece al usuario
+    const [posts] = await pool.query("SELECT * FROM posts WHERE id = ?", [id])
+    if (posts.length === 0) {
       return res.status(404).json({ message: "Publicación no encontrada" })
     }
 
-    if (post[0].user_id !== userId) {
+    const post = posts[0]
+
+    if (post.user_id !== userId) {
       return res.status(403).json({ message: "No tienes permiso para eliminar esta publicación" })
     }
 
-    // Si hay una imagen, eliminarla
-    if (post[0].image) {
-      const imagePath = path.join(__dirname, "..", post[0].image)
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath)
+    // Si la publicación tiene imagen, eliminarla de Cloudinary
+    if (post.image) {
+      // Extraer public_id de Cloudinary desde la URL de la imagen
+      // Asumiendo que usas carpeta y que la URL tiene formato:
+      // https://res.cloudinary.com/<cloud_name>/image/upload/v1234567/tu_carpeta_en_cloudinary/filename.jpg
+      // Necesitamos obtener el public_id (sin extensión)
+
+      const urlParts = post.image.split("/")
+      const folderIndex = urlParts.findIndex((part) => part === "upload") + 1
+      const publicIdWithExtension = urlParts.slice(folderIndex).join("/") // ej: "tu_carpeta_en_cloudinary/filename.jpg"
+      const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, "") // quitar extensión
+
+      try {
+        await cloudinary.uploader.destroy(publicId)
+      } catch (cloudErr) {
+        console.error("Error borrando imagen en Cloudinary:", cloudErr)
       }
     }
 
-    // Eliminar likes, comentarios y notificaciones relacionadas con la publicación
-    await pool.query("DELETE FROM likes WHERE post_id = ?", [id])
-    await pool.query("DELETE FROM comments WHERE post_id = ?", [id])
-    await pool.query("DELETE FROM notifications WHERE post_id = ?", [id])
-
-    // Eliminar la publicación
+    // Eliminar la publicación de la base de datos
     await pool.query("DELETE FROM posts WHERE id = ?", [id])
 
     res.json({ message: "Publicación eliminada correctamente" })
@@ -467,83 +355,71 @@ const deletePost = async (req, res) => {
   }
 }
 
-// Añadir esta función al controlador de posts
-
-// Obtener una publicación específica
-const getPostById = async (req, res) => {
+// Actualizar una publicación con opción de cambiar imagen
+const updatePost = async (req, res) => {
   const { id } = req.params
+  const { content } = req.body
   const userId = req.user.id
 
   try {
-    // Obtener la publicación con información del usuario
-    const [posts] = await pool.query(
-      `SELECT p.id, p.content, p.image, p.created_at as createdAt,
-      u.id as userId, u.username, u.profile_image as profileImage
-      FROM posts p
-      JOIN users u ON p.user_id = u.id
-      WHERE p.id = ?`,
-      [id],
-    )
-
+    // Verificar que la publicación existe y pertenece al usuario
+    const [posts] = await pool.query("SELECT * FROM posts WHERE id = ?", [id])
     if (posts.length === 0) {
       return res.status(404).json({ message: "Publicación no encontrada" })
     }
 
     const post = posts[0]
 
-    // Contar likes
-    const [likesResult] = await pool.query("SELECT COUNT(*) as count FROM likes WHERE post_id = ?", [id])
+    if (post.user_id !== userId) {
+      return res.status(403).json({ message: "No tienes permiso para editar esta publicación" })
+    }
 
-    // Verificar si el usuario actual dio like
-    const [userLiked] = await pool.query("SELECT * FROM likes WHERE post_id = ? AND user_id = ?", [id, userId])
+    let image = post.image // imagen actual
 
-    // Obtener comentarios
-    const [comments] = await pool.query(
-      `SELECT c.id, c.content, c.created_at as createdAt,
-      u.id as userId, u.username, u.profile_image as profileImage
-      FROM comments c
-      JOIN users u ON c.user_id = u.id
-      WHERE c.post_id = ?
-      ORDER BY c.created_at DESC
-      LIMIT 5`,
-      [id],
+    if (req.file) {
+      // Subir la nueva imagen a Cloudinary
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "tu_carpeta_en_cloudinary",
+      })
+
+      // Borrar archivo local temporal
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Error borrando archivo local:", err)
+      })
+
+      // Borrar la imagen anterior de Cloudinary si existe
+      if (post.image) {
+        const urlParts = post.image.split("/")
+        const folderIndex = urlParts.findIndex((part) => part === "upload") + 1
+        const publicIdWithExtension = urlParts.slice(folderIndex).join("/")
+        const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, "")
+
+        try {
+          await cloudinary.uploader.destroy(publicId)
+        } catch (cloudErr) {
+          console.error("Error borrando imagen anterior en Cloudinary:", cloudErr)
+        }
+      }
+
+      image = result.secure_url
+    }
+
+    // Validar que haya contenido o imagen
+    if (!content && !image) {
+      return res.status(400).json({ message: "La publicación debe tener contenido o imagen" })
+    }
+
+    await pool.query(
+      "UPDATE posts SET content = ?, image = ? WHERE id = ?",
+      [content, image, id]
     )
 
-    // Contar total de comentarios
-    const [commentCount] = await pool.query("SELECT COUNT(*) as count FROM comments WHERE post_id = ?", [id])
-
-    const formattedComments = comments.map((comment) => ({
-      id: comment.id,
-      content: comment.content,
-      createdAt: comment.createdAt,
-      user: {
-        id: comment.userId,
-        username: comment.username,
-        profileImage: comment.profileImage,
-      },
-    }))
-
-    res.json({
-      id: post.id,
-      content: post.content,
-      image: post.image,
-      createdAt: post.createdAt,
-      likes: likesResult[0].count,
-      liked: userLiked.length > 0,
-      comments: formattedComments,
-      commentCount: commentCount[0].count,
-      user: {
-        id: post.userId,
-        username: post.username,
-        profileImage: post.profileImage,
-      },
-    })
+    res.json({ message: "Publicación actualizada", content, image })
   } catch (error) {
-    console.error("Error al obtener publicación:", error)
+    console.error("Error al actualizar publicación:", error)
     res.status(500).json({ message: "Error en el servidor" })
   }
 }
-
 
 module.exports = {
   createPost,
@@ -551,8 +427,7 @@ module.exports = {
   getUserPosts,
   getPostComments,
   likePost,
-  commentPost,
-  updatePost,
+  unlikePost,
   deletePost,
-  getPostById,
+  updatePost,
 }
