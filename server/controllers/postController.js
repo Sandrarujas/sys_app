@@ -391,6 +391,73 @@ const commentPost = async (req, res) => {
   }
 };
 
+const getPostById = async (req, res) => {
+  const { id } = req.params
+  const userId = req.user.id
+
+  try {
+    const [posts] = await pool.query(
+      `SELECT p.id, p.content, p.image, p.created_at as createdAt,
+              u.id as userId, u.username, u.profile_image as profileImage
+       FROM posts p
+       JOIN users u ON p.user_id = u.id
+       WHERE p.id = ?`,
+      [id]
+    )
+
+    if (posts.length === 0) {
+      return res.status(404).json({ message: "Publicación no encontrada" })
+    }
+
+    const post = posts[0]
+
+    // Obtener likes y si el usuario actual dio like
+    const [likesResult] = await pool.query("SELECT COUNT(*) as count FROM likes WHERE post_id = ?", [id])
+    const [userLiked] = await pool.query("SELECT * FROM likes WHERE post_id = ? AND user_id = ?", [id, userId])
+
+    // Obtener comentarios (limitados)
+    const [comments] = await pool.query(
+      `SELECT c.id, c.content, c.created_at as createdAt,
+              u.id as userId, u.username, u.profile_image as profileImage
+       FROM comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.post_id = ?
+       ORDER BY c.created_at DESC
+       LIMIT 5`,
+      [id]
+    )
+
+    const formattedComments = comments.map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      user: {
+        id: comment.userId,
+        username: comment.username,
+        profileImage: comment.profileImage,
+      },
+    }))
+
+    res.json({
+      id: post.id,
+      content: post.content,
+      image: post.image,
+      createdAt: post.createdAt,
+      likes: likesResult[0].count,
+      liked: userLiked.length > 0,
+      comments: formattedComments,
+      user: {
+        id: post.userId,
+        username: post.username,
+        profileImage: post.profileImage,
+      },
+    })
+  } catch (error) {
+    console.error("Error al obtener publicación por ID:", error)
+    res.status(500).json({ message: "Error en el servidor" })
+  }
+}
+
 
 // Actualizar una publicación con opción de cambiar imagen
 const updatePost = async (req, res) => {
@@ -468,4 +535,5 @@ module.exports = {
   deletePost,
   updatePost,
   commentPost,
+  getPostById,      
 }
