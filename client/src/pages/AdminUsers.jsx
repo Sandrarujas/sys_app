@@ -1,97 +1,101 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useAuth } from "../context/AuthContext"
-import styles from "../styles/Admin.module.css"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import styles from "../styles/Admin.module.css";
+import { useNavigate } from "react-router-dom";
 
 const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const AdminUsers = () => {
-  const navigate = useNavigate()
-  const { isAdmin } = useAuth()
-  const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [pagination, setPagination] = useState({ total: 0, pages: 1 })
-  const [currentPage, setCurrentPage] = useState(1)
-  const [searchTerm, setSearchTerm] = useState("")
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ total: 0, pages: 1 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const admin = isAdmin()
+  const admin = isAdmin();
 
   useEffect(() => {
-    fetchUsers(currentPage)
+    fetchUsers(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage])
+  }, [currentPage]);
 
   const fetchUsers = async (page = 1) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       const response = await fetch(`${BASE_URL}/api/admin/users?page=${page}&limit=10`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
+      });
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (Array.isArray(data.users)) {
-          setUsers(data.users)
+          setUsers(data.users);
         } else {
-          setUsers([])
-          console.warn("La API no devolvió un array de usuarios")
+          setUsers([]);
+          console.warn("La API no devolvió un array de usuarios");
         }
-        setPagination({ total: data.totalUsers || 0, pages: data.totalPages || 1 })
+        setPagination({ total: data.totalUsers || 0, pages: data.totalPages || 1 });
       } else {
-        const errorText = await response.text()
-        console.error("Error en la respuesta:", response.status, errorText)
-        setUsers([])
-        setPagination({ total: 0, pages: 1 })
+        const errorText = await response.text();
+        console.error("Error en la respuesta:", response.status, errorText);
+        setUsers([]);
+        setPagination({ total: 0, pages: 1 });
       }
     } catch (error) {
-      console.error("Error fetching users:", error)
-      setUsers([])
-      setPagination({ total: 0, pages: 1 })
+      console.error("Error fetching users:", error);
+      setUsers([]);
+      setPagination({ total: 0, pages: 1 });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const deleteUser = async (userId, username) => {
-    if (!window.confirm(`¿Estás seguro de que quieres eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) {
-      return
+    if (
+      !window.confirm(
+        `¿Estás seguro de que quieres eliminar al usuario "${username}"? Esta acción no se puede deshacer.`
+      )
+    ) {
+      return;
     }
 
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
+      });
 
       if (response.ok) {
-        fetchUsers(currentPage)
-        alert("Usuario eliminado correctamente")
+        fetchUsers(currentPage);
+        alert("Usuario eliminado correctamente");
       } else {
-        const error = await response.json()
-        alert(`Error: ${error.error}`)
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error deleting user:", error)
-      alert("Error al eliminar el usuario")
+      console.error("Error deleting user:", error);
+      alert("Error al eliminar el usuario");
     }
-  }
+  };
 
   if (loading) {
-    return <div className={styles["admin-loading"]}>Cargando usuarios...</div>
+    return <div className={styles["admin-loading"]}>Cargando usuarios...</div>;
   }
 
-  // Protección para que users siempre sea un array
-  const filteredUsers = (users || []).filter(user =>
+  // Aseguramos que users sea siempre un array antes de filtrar
+  const filteredUsers = (Array.isArray(users) ? users : []).filter((user) =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  );
 
   return (
     <div className={styles["admin-users"]}>
@@ -167,10 +171,7 @@ const AdminUsers = () => {
       </div>
 
       <div className={styles["pagination"]}>
-        <button
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage(currentPage - 1)}
-        >
+        <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>
           Anterior
         </button>
         <span>
@@ -184,7 +185,7 @@ const AdminUsers = () => {
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AdminUsers
+export default AdminUsers;
