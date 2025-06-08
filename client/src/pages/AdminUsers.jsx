@@ -92,10 +92,12 @@ const AdminUsers = () => {
     return <div className={styles["admin-loading"]}>Cargando usuarios...</div>;
   }
 
-  // Aseguramos que users sea siempre un array antes de filtrar
-  const filteredUsers = (Array.isArray(users) ? users : []).filter((user) =>
+  const filteredUsers = (Array.isArray(users) ? users : []).filter(
+  (user) =>
+    user &&
+    user.username &&
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+);
 
   return (
     <div className={styles["admin-users"]}>
