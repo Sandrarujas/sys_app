@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const BASE_URL = process.env.process.env.REACT_APP_API_BASE_URL;
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const Avatar = ({ src, username, size = 40, version = "" }) => {
   const [error, setError] = useState(false);

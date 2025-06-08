@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import styles from "../styles/Admin.module.css"
 
-const BASE_URL = process.env.process.env.REACT_APP_API_BASE_URL;
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const AdminComments = () => {
   const [comments, setComments] = useState([])
