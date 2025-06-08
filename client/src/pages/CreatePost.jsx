@@ -5,6 +5,9 @@ import axiosInstance from "../api/axiosInstances"
 import styles from "../styles/CreatePost.module.css"
 
 
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+
 const CreatePost = ({ onPostCreated }) => {
   const [content, setContent] = useState("")
   const [image, setImage] = useState(null)

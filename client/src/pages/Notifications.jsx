@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom"
 import axiosInstance from "../api/axiosInstances"
 import styles from "../styles/Notifications.module.css"
 
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([])
