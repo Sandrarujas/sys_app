@@ -39,7 +39,7 @@ const Post = ({ post, onPostUpdate, onPostDelete, onCommentAdded, onLikeToggled 
     if (!imagePath) return null
     if (imagePath.startsWith("http")) return imagePath
     return `${BASE_URL}${imagePath}`
-  };
+  }
 
   const handleLike = async () => {
     try {
