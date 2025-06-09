@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styles from "../styles/NotificationModal.module.css";
 
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const NotificationModal = ({ notification, onClose, onNavigate }) => {
   const [commentContent, setCommentContent] = useState(null);
@@ -11,7 +12,7 @@ const NotificationModal = ({ notification, onClose, onNavigate }) => {
       const fetchComment = async () => {
         setLoading(true);
         try {
-          const res = await fetch(`/notifications/${notification.id}/comment`, {
+          const res = await fetch(`${BASE_URL}/notifications/${notification.id}/comment`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
