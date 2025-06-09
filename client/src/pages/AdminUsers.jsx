@@ -16,17 +16,31 @@ const AdminUsers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Verificar si es admin
   const admin = isAdmin();
 
   useEffect(() => {
+    if (!admin) {
+      // Si no es admin, puedes redirigir o mostrar error
+      navigate("/");
+      return;
+    }
+
     fetchUsers(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  }, [currentPage, admin, navigate]);
 
   const fetchUsers = async (page = 1) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        setUsers([]);
+        setPagination({ total: 0, pages: 1 });
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(`${BASE_URL}/api/admin/users?page=${page}&limit=10`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -38,7 +52,7 @@ const AdminUsers = () => {
         console.log("Respuesta completa del backend:", data);
 
         if (Array.isArray(data.users)) {
-          const safeUsers = data.users.filter(user => user && user.username);
+          const safeUsers = data.users.filter((user) => user && user.username);
           console.log("Usuarios filtrados (válidos):", safeUsers);
           setUsers(safeUsers);
         } else {
@@ -47,155 +61,101 @@ const AdminUsers = () => {
         }
 
         setPagination({
-          total: data.totalUsers || 0,
-          pages: data.totalPages || 1,
+          total: data.total || 0,
+          pages: data.pages || 1,
         });
       } else {
-        const errorText = await response.text();
-        console.error("Error en la respuesta:", response.status, errorText);
+        console.error("Error al obtener usuarios:", response.status);
         setUsers([]);
-        setPagination({ total: 0, pages: 1 });
       }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error en fetchUsers:", error);
       setUsers([]);
-      setPagination({ total: 0, pages: 1 });
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteUser = async (userId, username) => {
-    if (
-      !window.confirm(
-        `¿Estás seguro de que quieres eliminar al usuario "${username}"? Esta acción no se puede deshacer.`
-      )
-    ) {
-      return;
-    }
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
 
+  const filteredUsers = users.filter((user) =>
+    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const formatDate = (dateString) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        fetchUsers(currentPage);
-        alert("Usuario eliminado correctamente");
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.error}`);
-      }
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      alert("Error al eliminar el usuario");
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return dateString;
     }
   };
 
-  if (loading) {
-    return <div className={styles["admin-loading"]}>Cargando usuarios...</div>;
-  }
-
-const filteredUsers = (Array.isArray(users) ? users : [])
-  .filter((user) => user && typeof user.username === "string")
-  .filter((user) =>
-    user.username.toLowerCase().includes((searchTerm || "").toLowerCase())
-  );
-
-
   return (
-    <div className={styles["admin-users"]}>
-      <button
-        className={styles["admin-btn"]}
-        onClick={() => navigate(-1)}
-        style={{ marginBottom: "10px" }}
-      >
-        ← Volver atrás
-      </button>
+    <div className={styles["admin-users-container"]}>
+      <h1>Administrar Usuarios</h1>
 
-      <div className={styles["admin-header"]}>
-        <h1>Gestión de Usuarios</h1>
-        <p>Total: {pagination.total} usuarios</p>
-        <button onClick={() => fetchUsers(currentPage)} className={styles["admin-btn"]}>
-          Recargar
-        </button>
-        <input
-          type="text"
-          placeholder="Filtrar por nombre de usuario"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles["filter-input"]}
-        />
-      </div>
+      <input
+        type="text"
+        placeholder="Buscar por usuario"
+        value={searchTerm}
+        onChange={handleSearchChange}
+        className={styles["search-input"]}
+      />
 
-      <div className={styles["users-table"]}>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Usuario</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th>Fecha Registro</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) =>
-                user ? (
+      {loading ? (
+        <p>Cargando usuarios...</p>
+      ) : (
+        <>
+          <table className={styles["users-table"]}>
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Admin</th>
+                <th>Creado</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
                   <tr key={user.id}>
-                    <td>{user.id}</td>
                     <td>{user.username}</td>
                     <td>{user.email}</td>
-                    <td>
-                      <span className={`${styles["role-badge"]} ${styles[user.role]}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td>{new Date(user.created_at).toLocaleDateString()}</td>
-                    <td>
-                      <div className={styles["user-actions"]}>
-                        {admin && user.role !== "admin" && (
-                          <button
-                            className={`${styles["action-btn"]} ${styles["delete"]}`}
-                            onClick={() => deleteUser(user.id, user.username)}
-                          >
-                            Eliminar
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                    <td>{user.isAdmin ? "Sí" : "No"}</td>
+                    <td>{formatDate(user.created_at)}</td>
+                    <td>{user.status ? "Activo" : "Inactivo"}</td>
                   </tr>
-                ) : null
-              )
-            ) : (
-              <tr>
-                <td colSpan="6">No se encontraron usuarios con ese nombre.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5">No se encontraron usuarios.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
 
-      <div className={styles["pagination"]}>
-        <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>
-          Anterior
-        </button>
-        <span>
-          Página {currentPage} de {pagination.pages}
-        </span>
-        <button
-          disabled={currentPage === pagination.pages}
-          onClick={() => setCurrentPage(currentPage + 1)}
-        >
-          Siguiente
-        </button>
-      </div>
+          <div className={styles["pagination-controls"]}>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage <= 1}
+            >
+              Anterior
+            </button>
+            <span>
+              Página {currentPage} de {pagination.pages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.pages))}
+              disabled={currentPage >= pagination.pages}
+            >
+              Siguiente
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

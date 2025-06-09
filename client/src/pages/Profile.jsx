@@ -8,7 +8,6 @@ import Post from "../components/Post";
 import EditProfileModal from "../components/EditProfileModal";
 import styles from "../styles/Profile.module.css";
 
-
 const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const Profile = () => {
@@ -21,7 +20,8 @@ const Profile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const isOwnProfile = user && profile && user.id === profile.id;
+  // Aseguramos que la comparación de IDs sea consistente en tipo
+  const isOwnProfile = user && profile && String(user.id) === String(profile.id);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -79,28 +79,26 @@ const Profile = () => {
   };
 
   const handlePostUpdate = (updatedPost) => {
-    console.log("Actualizando publicación:", updatedPost);
     setPosts((prevPosts) =>
       prevPosts.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
     );
   };
 
   const handlePostDelete = (postId) => {
-    console.log("Eliminando publicación:", postId);
     setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
   };
 
   const incrementProfileComments = () => {
     setProfile((prev) => ({
       ...prev,
-      comments: prev.comments + 1,
+      comments: (prev.comments || 0) + 1,
     }));
   };
 
   const incrementProfileLikes = (liked) => {
     setProfile((prev) => ({
       ...prev,
-      likes: prev.likes + (liked ? 1 : -1),
+      likes: (prev.likes || 0) + (liked ? 1 : -1),
     }));
   };
 
@@ -108,11 +106,11 @@ const Profile = () => {
   if (error) return <div className={styles["error"]}>{error}</div>;
   if (!profile) return <div className={styles["error"]}>Usuario no encontrado</div>;
 
-  // Función para evitar concatenar base URL dos veces
+  // Usar BASE_URL en vez de process.env directamente para consistencia
   const getProfileImageUrl = (url) => {
     if (!url) return "/placeholder.svg?height=150&width=150";
     if (url.startsWith("http")) return url;
-    return `${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000"}${url}`;
+    return `${BASE_URL || "http://localhost:5000"}${url}`;
   };
 
   return (
@@ -141,23 +139,24 @@ const Profile = () => {
           </div>
           <div className={styles["profile-stats"]}>
             <div className={styles["profile-stat"]}>
-              <span className={styles["stat-count"]}>{profile.posts}</span>
+              {/* Si no tienes profile.posts en backend, muestra posts.length */}
+              <span className={styles["stat-count"]}>{profile.posts ?? posts.length}</span>
               <span className={styles["stat-label"]}>Publicaciones</span>
             </div>
             <div className={styles["profile-stat"]}>
-              <span className={styles["stat-count"]}>{profile.followers}</span>
+              <span className={styles["stat-count"]}>{profile.followers ?? 0}</span>
               <span className={styles["stat-label"]}>Seguidores</span>
             </div>
             <div className={styles["profile-stat"]}>
-              <span className={styles["stat-count"]}>{profile.following}</span>
+              <span className={styles["stat-count"]}>{profile.following ?? 0}</span>
               <span className={styles["stat-label"]}>Siguiendo</span>
             </div>
             <div className={styles["profile-stat"]}>
-              <span className={styles["stat-count"]}>{profile.comments}</span>
+              <span className={styles["stat-count"]}>{profile.comments ?? 0}</span>
               <span className={styles["stat-label"]}>Comentarios</span>
             </div>
             <div className={styles["profile-stat"]}>
-              <span className={styles["stat-count"]}>{profile.likes}</span>
+              <span className={styles["stat-count"]}>{profile.likes ?? 0}</span>
               <span className={styles["stat-label"]}>Me gusta</span>
             </div>
           </div>
