@@ -1,5 +1,4 @@
 const pool = require("../config/db")
-const cloudinary = require("../config/cloudinary")
 const fs = require("fs")
 const path = require("path")
 
@@ -11,16 +10,9 @@ const createPost = async (req, res) => {
   let image = null
   try {
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "Carpeta de fotos",
-      })
-
-      // Borrar archivo local temporal
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error("Error borrando archivo local:", err)
-      })
-
-      image = result.secure_url
+      // Usamos solo la ruta local o nombre de archivo si quieres
+      // Por ejemplo, si guardas imágenes en /uploads/
+      image = req.file.filename || req.file.path
     }
 
     if (!content && !image) {
@@ -308,7 +300,7 @@ const unlikePost = async (req, res) => {
   }
 }
 
-// Eliminar una publicación y su imagen en Cloudinary
+// Eliminar una publicación (sin borrar imagen en Cloudinary)
 const deletePost = async (req, res) => {
   const { id } = req.params
   const userId = req.user.id
@@ -326,201 +318,12 @@ const deletePost = async (req, res) => {
       return res.status(403).json({ message: "No tienes permiso para eliminar esta publicación" })
     }
 
-    // Si la publicación tiene imagen, eliminarla de Cloudinary
-    if (post.image) {
-      // Extraer public_id de Cloudinary desde la URL de la imagen
-      // Asumiendo que usas carpeta y que la URL tiene formato:
-      // https://res.cloudinary.com/<cloud_name>/image/upload/v1234567/tu_carpeta_en_cloudinary/filename.jpg
-      // Necesitamos obtener el public_id (sin extensión)
-
-      const urlParts = post.image.split("/")
-      const folderIndex = urlParts.findIndex((part) => part === "upload") + 1
-      const publicIdWithExtension = urlParts.slice(folderIndex).join("/") // ej: "tu_carpeta_en_cloudinary/filename.jpg"
-      const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, "") // quitar extensión
-
-      try {
-        await cloudinary.uploader.destroy(publicId)
-      } catch (cloudErr) {
-        console.error("Error borrando imagen en Cloudinary:", cloudErr)
-      }
-    }
-
-    // Eliminar la publicación de la base de datos
+    // Solo eliminar la publicación de la base de datos
     await pool.query("DELETE FROM posts WHERE id = ?", [id])
 
     res.json({ message: "Publicación eliminada correctamente" })
   } catch (error) {
     console.error("Error al eliminar publicación:", error)
-    res.status(500).json({ message: "Error en el servidor" })
-  }
-}
-
-
-const commentPost = async (req, res) => {
-  const { id: postId } = req.params;
-  const userId = req.user.id;
-  const { content } = req.body;
-
-  if (!content || content.trim() === "") {
-    return res.status(400).json({ message: "El comentario no puede estar vacío" });
-  }
-
-  try {
-    // Verificar que la publicación existe
-    const [postExists] = await pool.query("SELECT id FROM posts WHERE id = ?", [postId]);
-    if (postExists.length === 0) {
-      return res.status(404).json({ message: "Publicación no encontrada" });
-    }
-
-    // Insertar comentario
-    const [result] = await pool.query(
-      "INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)",
-      [postId, userId, content]
-    );
-
-    res.status(201).json({
-      id: result.insertId,
-      postId,
-      userId,
-      content,
-      createdAt: new Date(),
-    });
-  } catch (error) {
-    console.error("Error al comentar publicación:", error);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-};
-
-const getPostById = async (req, res) => {
-  const { id } = req.params
-  const userId = req.user.id
-
-  try {
-    const [posts] = await pool.query(
-      `SELECT p.id, p.content, p.image, p.created_at as createdAt,
-              u.id as userId, u.username, u.profile_image as profileImage
-       FROM posts p
-       JOIN users u ON p.user_id = u.id
-       WHERE p.id = ?`,
-      [id]
-    )
-
-    if (posts.length === 0) {
-      return res.status(404).json({ message: "Publicación no encontrada" })
-    }
-
-    const post = posts[0]
-
-    // Obtener likes y si el usuario actual dio like
-    const [likesResult] = await pool.query("SELECT COUNT(*) as count FROM likes WHERE post_id = ?", [id])
-    const [userLiked] = await pool.query("SELECT * FROM likes WHERE post_id = ? AND user_id = ?", [id, userId])
-
-    // Obtener comentarios (limitados)
-    const [comments] = await pool.query(
-      `SELECT c.id, c.content, c.created_at as createdAt,
-              u.id as userId, u.username, u.profile_image as profileImage
-       FROM comments c
-       JOIN users u ON c.user_id = u.id
-       WHERE c.post_id = ?
-       ORDER BY c.created_at DESC
-       LIMIT 5`,
-      [id]
-    )
-
-    const formattedComments = comments.map((comment) => ({
-      id: comment.id,
-      content: comment.content,
-      createdAt: comment.createdAt,
-      user: {
-        id: comment.userId,
-        username: comment.username,
-        profileImage: comment.profileImage,
-      },
-    }))
-
-    res.json({
-      id: post.id,
-      content: post.content,
-      image: post.image,
-      createdAt: post.createdAt,
-      likes: likesResult[0].count,
-      liked: userLiked.length > 0,
-      comments: formattedComments,
-      user: {
-        id: post.userId,
-        username: post.username,
-        profileImage: post.profileImage,
-      },
-    })
-  } catch (error) {
-    console.error("Error al obtener publicación por ID:", error)
-    res.status(500).json({ message: "Error en el servidor" })
-  }
-}
-
-
-// Actualizar una publicación con opción de cambiar imagen
-const updatePost = async (req, res) => {
-  const { id } = req.params
-  const { content } = req.body
-  const userId = req.user.id
-
-  try {
-    // Verificar que la publicación existe y pertenece al usuario
-    const [posts] = await pool.query("SELECT * FROM posts WHERE id = ?", [id])
-    if (posts.length === 0) {
-      return res.status(404).json({ message: "Publicación no encontrada" })
-    }
-
-    const post = posts[0]
-
-    if (post.user_id !== userId) {
-      return res.status(403).json({ message: "No tienes permiso para editar esta publicación" })
-    }
-
-    let image = post.image // imagen actual
-
-    if (req.file) {
-      // Subir la nueva imagen a Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "Carpeta de fotos",
-      })
-
-      // Borrar archivo local temporal
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error("Error borrando archivo local:", err)
-      })
-
-      // Borrar la imagen anterior de Cloudinary si existe
-      if (post.image) {
-        const urlParts = post.image.split("/")
-        const folderIndex = urlParts.findIndex((part) => part === "upload") + 1
-        const publicIdWithExtension = urlParts.slice(folderIndex).join("/")
-        const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, "")
-
-        try {
-          await cloudinary.uploader.destroy(publicId)
-        } catch (cloudErr) {
-          console.error("Error borrando imagen anterior en Cloudinary:", cloudErr)
-        }
-      }
-
-      image = result.secure_url
-    }
-
-    // Validar que haya contenido o imagen
-    if (!content && !image) {
-      return res.status(400).json({ message: "La publicación debe tener contenido o imagen" })
-    }
-
-    await pool.query(
-      "UPDATE posts SET content = ?, image = ? WHERE id = ?",
-      [content, image, id]
-    )
-
-    res.json({ message: "Publicación actualizada", content, image })
-  } catch (error) {
-    console.error("Error al actualizar publicación:", error)
     res.status(500).json({ message: "Error en el servidor" })
   }
 }
@@ -533,7 +336,4 @@ module.exports = {
   likePost,
   unlikePost,
   deletePost,
-  updatePost,
-  commentPost,
-  getPostById,      
 }
