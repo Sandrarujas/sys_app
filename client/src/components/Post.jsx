@@ -9,7 +9,6 @@ import EditPostModal from "./EditPostModal"
 import styles from "../styles/Post.module.css"
 
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const Post = ({ post, onPostUpdate, onPostDelete, onCommentAdded, onLikeToggled }) => {
   const {
@@ -43,7 +42,7 @@ const Post = ({ post, onPostUpdate, onPostDelete, onCommentAdded, onLikeToggled 
 
   const handleLike = async () => {
     try {
-      await axiosInstance.post(`${BASE_URL}/api/posts/${post.id}/like`)
+      await axiosInstance.post(`/api/posts/${post.id}/like`)
       const newLiked = !liked
       const newLikes = liked ? likes - 1 : likes + 1
 
@@ -74,7 +73,7 @@ const Post = ({ post, onPostUpdate, onPostDelete, onCommentAdded, onLikeToggled 
     if (!commentText.trim()) return
 
     try {
-      const res = await axiosInstance.post(`${BASE_URL}/api/posts/${post.id}/comment`, {
+      const res = await axiosInstance.post(`/api/posts/${post.id}/comment`, {
         content: commentText,
       })
 
@@ -109,7 +108,7 @@ const Post = ({ post, onPostUpdate, onPostDelete, onCommentAdded, onLikeToggled 
     if (comments.length === 0) {
       try {
         setLoadingComments(true)
-        const res = await axiosInstance.get(`${BASE_URL}/api/posts/${post.id}/comments?limit=5`)
+        const res = await axiosInstance.get(`/api/posts/${post.id}/comments?limit=5`)
         setComments(res.data.comments)
         setAllCommentsLoaded(res.data.comments.length >= res.data.pagination.total)
       } catch (error) {
@@ -124,7 +123,7 @@ const Post = ({ post, onPostUpdate, onPostDelete, onCommentAdded, onLikeToggled 
     try {
       setLoadingComments(true)
       const page = Math.floor(comments.length / 5) + 1
-      const res = await axiosInstance.get(`${BASE_URL}/api/posts/${post.id}/comments?page=${page}&limit=5`)
+      const res = await axiosInstance.get(`/api/posts/${post.id}/comments?page=${page}&limit=5`)
 
       setComments([...comments, ...res.data.comments])
       setAllCommentsLoaded(comments.length + res.data.comments.length >= res.data.pagination.total)
@@ -149,7 +148,7 @@ const Post = ({ post, onPostUpdate, onPostDelete, onCommentAdded, onLikeToggled 
     if (window.confirm("¿Estás seguro de que quieres eliminar esta publicación?")) {
       try {
         setIsDeleting(true)
-        await axiosInstance.delete(`${BASE_URL}/api/posts/${post.id}`)
+        await axiosInstance.delete(`/api/posts/${post.id}`)
 
         deletePostFromContext(post.id)
 
