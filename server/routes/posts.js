@@ -11,6 +11,7 @@ const {
   getUserPosts,
   getPostComments,
   likePost,
+  unlikePost,
   commentPost,
   updatePost,
   deletePost,
@@ -29,9 +30,7 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir)
   },
   filename: (req, file, cb) => {
-    // Generar un nombre único para evitar colisiones
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
-    // Obtener la extensión original del archivo
     const ext = path.extname(file.originalname).toLowerCase()
     cb(null, uniqueSuffix + ext)
   },
@@ -65,10 +64,12 @@ const handleMulterErrors = (err, req, res, next) => {
   next()
 }
 
-// Crear una publicación
+// Rutas
+
+// Crear una publicación (con imagen opcional)
 router.post("/", authenticateToken, upload.single("image"), handleMulterErrors, createPostValidators, createPost)
 
-// Obtener todas las publicaciones
+// Obtener todas las publicaciones (paginadas)
 router.get("/", authenticateToken, getPosts)
 
 // Obtener publicaciones de un usuario específico
@@ -80,17 +81,17 @@ router.get("/:id/comments", authenticateToken, getPostComments)
 // Dar like a una publicación
 router.post("/:id/like", authenticateToken, likePost)
 
+// Quitar like a una publicación (si quieres agregar esta ruta, aunque no la mencionaste explícitamente)
+router.post("/:id/unlike", authenticateToken, unlikePost)
+
 // Comentar en una publicación
 router.post("/:id/comment", authenticateToken, commentValidators, commentPost)
 
-// NUEVAS RUTAS
-
-// Actualizar una publicación
+// Actualizar una publicación (contenido e imagen)
 router.put("/:id", authenticateToken, upload.single("image"), handleMulterErrors, createPostValidators, updatePost)
 
 // Eliminar una publicación
 router.delete("/:id", authenticateToken, deletePost)
-
 
 // Obtener una publicación específica por ID
 router.get("/:id", authenticateToken, getPostById)

@@ -10,9 +10,7 @@ const createPost = async (req, res) => {
   let image = null
   try {
     if (req.file) {
-      // Usamos solo la ruta local o nombre de archivo si quieres
-      // Por ejemplo, si guardas imágenes en /uploads/
-      image = req.file.filename || req.file.path
+      image = req.file.filename
     }
 
     if (!content && !image) {
@@ -36,7 +34,7 @@ const createPost = async (req, res) => {
   }
 }
 
-// Obtener todas las publicaciones con paginación (sin cambios)
+// Obtener todas las publicaciones con paginación
 const getPosts = async (req, res) => {
   const userId = req.user.id
   const page = Number.parseInt(req.query.page) || 1
@@ -129,7 +127,7 @@ const getPosts = async (req, res) => {
   }
 }
 
-// Obtener publicaciones de un usuario específico (sin cambios)
+// Obtener publicaciones de un usuario específico
 const getUserPosts = async (req, res) => {
   const { username } = req.params
   const userId = req.user.id
@@ -159,11 +157,11 @@ const getUserPosts = async (req, res) => {
         const [userLiked] = await pool.query("SELECT * FROM likes WHERE post_id = ? AND user_id = ?", [post.id, userId])
         const [comments] = await pool.query(
           `SELECT c.id, c.content, c.created_at as createdAt,
-        u.id as userId, u.username, u.profile_image as profileImage
-        FROM comments c
-        JOIN users u ON c.user_id = u.id
-        WHERE c.post_id = ?
-        ORDER BY c.created_at ASC`,
+          u.id as userId, u.username, u.profile_image as profileImage
+          FROM comments c
+          JOIN users u ON c.user_id = u.id
+          WHERE c.post_id = ?
+          ORDER BY c.created_at ASC`,
           [post.id],
         )
 
@@ -202,7 +200,7 @@ const getUserPosts = async (req, res) => {
   }
 }
 
-// Obtener todos los comentarios de una publicación con paginación (sin cambios)
+// Obtener todos los comentarios de una publicación con paginación
 const getPostComments = async (req, res) => {
   const { id } = req.params
   const page = Number.parseInt(req.query.page) || 1
@@ -258,7 +256,7 @@ const getPostComments = async (req, res) => {
   }
 }
 
-// Dar like a una publicación (sin cambios)
+// Dar like a una publicación
 const likePost = async (req, res) => {
   const { id } = req.params
   const userId = req.user.id
@@ -279,7 +277,7 @@ const likePost = async (req, res) => {
   }
 }
 
-// Quitar like de una publicación (sin cambios)
+// Quitar like de una publicación
 const unlikePost = async (req, res) => {
   const { id } = req.params
   const userId = req.user.id
@@ -300,30 +298,180 @@ const unlikePost = async (req, res) => {
   }
 }
 
-// Eliminar una publicación (sin borrar imagen en Cloudinary)
-const deletePost = async (req, res) => {
+// Comentar en una publicación
+const commentPost = async (req, res) => {
   const { id } = req.params
   const userId = req.user.id
+  const { content } = req.body
+
+  if (!content || content.trim() === "") {
+    return res.status(400).json({ message: "El contenido del comentario no puede estar vacío" })
+  }
 
   try {
-    // Verificar que la publicación existe y pertenece al usuario
+    const [postExists] = await pool.query("SELECT id FROM posts WHERE id = ?", [id])
+    if (postExists.length === 0) {
+      return res.status(404).json({ message: "Publicación no encontrada" })
+    }
+
+    const [result] = await pool.query(
+      "INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)",
+      [id, userId, content.trim()]
+    )
+
+    res.status(201).json({
+      id: result.insertId,
+      content: content.trim(),
+      createdAt: new Date(),
+      user: {
+        id: userId,
+      },
+    })
+  } catch (error) {
+    console.error("Error al crear comentario:", error)
+    res.status(500).json({ message: "Error en el servidor" })
+  }
+}
+
+// Actualizar una publicación (contenido e imagen)
+const updatePost = async (req, res) => {
+  const { id } = req.params
+  const userId = req.user.id
+  const { content } = req.body
+
+  try {
     const [posts] = await pool.query("SELECT * FROM posts WHERE id = ?", [id])
     if (posts.length === 0) {
       return res.status(404).json({ message: "Publicación no encontrada" })
     }
 
     const post = posts[0]
+    if (post.user_id !== userId) {
+      return res.status(403).json({ message: "No tienes permiso para editar esta publicación" })
+    }
 
+    let image = post.image
+
+    if (req.file) {
+      // Borrar la imagen vieja si existe
+      if (image) {
+        const oldImagePath = path.join(__dirname, "..", "uploads", image)
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath)
+        }
+      }
+      image = req.file.filename
+    }
+
+    if (!content && !image) {
+      return res.status(400).json({ message: "La publicación debe tener contenido o imagen" })
+    }
+
+    await pool.query(
+      "UPDATE posts SET content = ?, image = ? WHERE id = ?",
+      [content, image, id]
+    )
+
+    res.json({ message: "Publicación actualizada" })
+  } catch (error) {
+    console.error("Error al actualizar publicación:", error)
+    res.status(500).json({ message: "Error en el servidor" })
+  }
+}
+
+// Eliminar una publicación
+const deletePost = async (req, res) => {
+  const { id } = req.params
+  const userId = req.user.id
+
+  try {
+    const [posts] = await pool.query("SELECT * FROM posts WHERE id = ?", [id])
+    if (posts.length === 0) {
+      return res.status(404).json({ message: "Publicación no encontrada" })
+    }
+
+    const post = posts[0]
     if (post.user_id !== userId) {
       return res.status(403).json({ message: "No tienes permiso para eliminar esta publicación" })
     }
 
-    // Solo eliminar la publicación de la base de datos
+    // Borrar imagen si existe
+    if (post.image) {
+      const imagePath = path.join(__dirname, "..", "uploads", post.image)
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath)
+      }
+    }
+
     await pool.query("DELETE FROM posts WHERE id = ?", [id])
 
-    res.json({ message: "Publicación eliminada correctamente" })
+    res.json({ message: "Publicación eliminada" })
   } catch (error) {
     console.error("Error al eliminar publicación:", error)
+    res.status(500).json({ message: "Error en el servidor" })
+  }
+}
+
+// Obtener una publicación por ID
+const getPostById = async (req, res) => {
+  const { id } = req.params
+  const userId = req.user.id
+
+  try {
+    const [posts] = await pool.query(
+      `SELECT p.id, p.content, p.image, p.created_at as createdAt,
+      u.id as userId, u.username, u.profile_image as profileImage
+      FROM posts p
+      JOIN users u ON p.user_id = u.id
+      WHERE p.id = ?`,
+      [id],
+    )
+
+    if (posts.length === 0) {
+      return res.status(404).json({ message: "Publicación no encontrada" })
+    }
+
+    const post = posts[0]
+
+    const [likesResult] = await pool.query("SELECT COUNT(*) as count FROM likes WHERE post_id = ?", [post.id])
+    const [userLiked] = await pool.query("SELECT * FROM likes WHERE post_id = ? AND user_id = ?", [post.id, userId])
+    const [comments] = await pool.query(
+      `SELECT c.id, c.content, c.created_at as createdAt,
+      u.id as userId, u.username, u.profile_image as profileImage
+      FROM comments c
+      JOIN users u ON c.user_id = u.id
+      WHERE c.post_id = ?
+      ORDER BY c.created_at DESC`,
+      [post.id],
+    )
+
+    const formattedComments = comments.map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      user: {
+        id: comment.userId,
+        username: comment.username,
+        profileImage: comment.profileImage,
+      },
+    }))
+
+    res.json({
+      id: post.id,
+      content: post.content,
+      image: post.image,
+      createdAt: post.createdAt,
+      likes: likesResult[0].count,
+      liked: userLiked.length > 0,
+      comments: formattedComments,
+      user: {
+        id: post.userId,
+        username: post.username,
+        profileImage: post.profileImage,
+      },
+    })
+  } catch (error) {
+    console.error("Error al obtener publicación:", error)
     res.status(500).json({ message: "Error en el servidor" })
   }
 }
@@ -335,5 +483,8 @@ module.exports = {
   getPostComments,
   likePost,
   unlikePost,
+  commentPost,
+  updatePost,
   deletePost,
+  getPostById,
 }
