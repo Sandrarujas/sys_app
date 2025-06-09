@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 import { AuthContext } from "../context/AuthContext"
 import styles from "../styles/Notifications.module.css"
 
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const NotificationList = () => {
   const {
@@ -65,9 +66,9 @@ const NotificationList = () => {
     switch (type) {
       case "like":
       case "comment":
-        return `/post/${postId}`
+        return `${BASE_URL}/post/${postId}`
       case "follow":
-        return `/profile/${senderUsername}`
+        return `${BASE_URL}/profile/${senderUsername}`
       default:
         return "#"
     }

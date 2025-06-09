@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
 
       try {
         // Establecer el token en los headers por defecto de axiosInstance
-        axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`
         const res = await axios.get(`${BASE_URL}/api/auth/me`)
         setUser(res.data)
       } catch {

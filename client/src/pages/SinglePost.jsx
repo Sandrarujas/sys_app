@@ -18,7 +18,7 @@ const SinglePost = () => {
       try {
         setLoading(true);
         // Usa ruta relativa porque axiosInstance ya tiene baseURL
-        const res = await axiosInstance.get(`/api/posts/${id}`);
+        const res = await axios.get(`${BASE_URL}/api/posts/${id}`);
         setPost(res.data);
         setError("");
       } catch (error) {
