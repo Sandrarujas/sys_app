@@ -6,6 +6,8 @@ import axios from "axios";
 import Post from "../components/Post";
 import styles from "../styles/Post.module.css";
 
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const SinglePost = () => {
   const { id } = useParams();
   const [post, setPost] = useState(null);

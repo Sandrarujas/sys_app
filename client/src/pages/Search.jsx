@@ -6,6 +6,8 @@ import axios from "axios";
 import Post from "../components/Post";
 import styles from "../styles/Search.module.css";
 
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const Search = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
