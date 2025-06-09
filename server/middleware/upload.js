@@ -1,29 +1,27 @@
-const multer = require('multer');
-const path = require('path');
+// routes/upload.js
+const express = require("express");
+const router = express.Router();
+const path = require("path");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, `upload-${uniqueSuffix}${ext}`);
+// ✅ Usa Cloudinary en producción, disco local en desarrollo
+const isProduction = process.env.NODE_ENV === "production";
+const upload = isProduction
+  ? require("../config/cloudinary")     // Cloudinary
+  : require("../middleware/localUpload"); // Multer local (tu archivo con diskStorage)
+
+router.post("/upload", upload.single("image"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "No se subió ninguna imagen" });
   }
+
+  const imageUrl = isProduction
+    ? req.file.path              // URL pública de Cloudinary
+    : `/uploads/${req.file.filename}`; // Ruta local
+
+  res.status(200).json({
+    message: "Imagen subida exitosamente",
+    url: imageUrl,
+  });
 });
 
-const fileFilter = (req, file, cb) => {
-  if(file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Solo se permiten imágenes'), false);
-  }
-};
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter,
-});
-
-module.exports = upload;
+module.exports = router;
