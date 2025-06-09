@@ -92,33 +92,35 @@ export const AuthProvider = ({ children }) => {
   }
 
   const register = async (username, email, password) => {
-    try {
-      const res = await axios.post(`${BASE_URL}/api/auth/register`, {
-        username,
-        email,
-        password,
-      })
+  try {
+    const res = await axios.post(`${BASE_URL}/api/auth/register`, {
+      username,
+      email,
+      password,
+      role: "user",
+    })
 
-      localStorage.setItem("token", res.data.token)
-      axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
+    localStorage.setItem("token", res.data.token)
+    axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
 
-      setUser({
-        id: res.data.user.id,
-        username: res.data.user.username,
-        email: res.data.user.email,
-        role: res.data.user.role,
-      })
+    setUser({
+      id: res.data.user.id,
+      username: res.data.user.username,
+      email: res.data.user.email,
+      role: res.data.user.role,
+    })
 
-      return { success: true }
-    } catch (error) {
-      console.error("Error en registro:", error.response?.data || error.message)
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        "Error al registrarse"
-      return { success: false, message }
-    }
+    return { success: true }
+  } catch (error) {
+    console.error("Error en registro:", error.response?.data || error.message)
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Error al registrarse"
+    return { success: false, message }
   }
+}
+
 
   const logout = () => {
     localStorage.removeItem("token")
