@@ -38,10 +38,16 @@ const Register = () => {
     const result = await register(username, email, password)
     console.log("Registro resultado:", result)
     if (result.success) {
-      navigate("/")
-    } else {
-      setError(result.message || "Error al registrarse")
-    }
+  navigate("/")
+} else {
+  if (result.conflictingField === "email") {
+    setError("Este email ya está en uso")
+  } else if (result.conflictingField === "username") {
+    setError("Este nombre de usuario ya está en uso")
+  } else {
+    setError(result.message || "Error al registrarse")
+  }
+}
   }
 
   return (

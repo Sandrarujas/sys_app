@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const register = async (username, email, password) => {
+ const register = async (username, email, password) => {
   try {
     const res = await axios.post(`${BASE_URL}/api/auth/register`, {
       username,
@@ -116,10 +116,12 @@ export const AuthProvider = ({ children }) => {
       error.response?.data?.message ||
       error.message ||
       "Error al registrarse"
-    return { success: false, message }
+
+    const conflictingField = error.response?.data?.conflictingField
+
+    return { success: false, message, conflictingField }
   }
 }
-
 
   const logout = () => {
     localStorage.removeItem("token")
