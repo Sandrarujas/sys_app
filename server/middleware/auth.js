@@ -12,7 +12,6 @@ const authenticateToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "secretkey")
 
-    // Obtener información del usuario desde la base de datos
     const [rows] = await pool.query("SELECT id, username, email, role FROM users WHERE id = ?", [decoded.id])
 
     if (rows.length === 0) {
