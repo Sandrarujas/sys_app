@@ -3,6 +3,8 @@ import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -14,7 +16,7 @@ const AdminUsers = () => {
 
   const fetchUsers = async (page = 1) => {
     try {
-      const response = await axios.get(`/api/users?page=${page}`);
+      const response = await axios.get(`${BASE_URL}/api/users?page=${page}`);
       setUsers(response.data.users);
       setTotalPages(response.data.totalPages);
     } catch (error) {
