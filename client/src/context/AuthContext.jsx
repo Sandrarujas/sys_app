@@ -97,7 +97,6 @@ export const AuthProvider = ({ children }) => {
         username,
         email,
         password,
-        role: 'user'
       })
 
       localStorage.setItem("token", res.data.token)

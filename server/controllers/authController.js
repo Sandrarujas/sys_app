@@ -5,7 +5,7 @@ const pool = require("../config/db")
 // Registrar un nuevo usuario
 const register = async (req, res) => {
   console.log("Datos recibidos en el body (register):", req.body)
-  const { username, email, password, role = "user" } = req.body
+  const { username, email, password } = req.body
 
   if (!username || !email || !password) {
     console.log("Faltan campos obligatorios en registro")
@@ -29,6 +29,9 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10)
     const hashedPassword = await bcrypt.hash(password, salt)
     console.log("Contraseña hasheada generada")
+
+    // Forzar el role a 'user' para evitar manipulación en frontend
+    const role = "user"
 
     const [result] = await pool.query(
       "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
