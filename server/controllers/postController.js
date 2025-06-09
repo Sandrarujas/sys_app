@@ -7,7 +7,6 @@ const createPost = async (req, res) => {
   const { content } = req.body
   const userId = req.user.id
 
-  // Validar contenido (si viene)
   if (content && typeof content !== "string") {
     return res.status(400).json({ message: "Contenido inválido" })
   }
@@ -15,15 +14,20 @@ const createPost = async (req, res) => {
   let image = null
   try {
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "Carpeta de fotos",
-      })
+      // Subir desde buffer
+      const uploadFromBuffer = (buffer) =>
+        new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: "Carpeta de fotos" },
+            (error, result) => {
+              if (error) return reject(error)
+              resolve(result)
+            }
+          )
+          stream.end(buffer)
+        })
 
-      // Borrar archivo local temporal con promesas
-      await fs.unlink(req.file.path).catch((err) =>
-        console.error("Error borrando archivo local:", err)
-      )
-
+      const result = await uploadFromBuffer(req.file.buffer)
       image = result.secure_url
     }
 
@@ -250,7 +254,7 @@ const getUserPosts = async (req, res) => {
   }
 }
 
-// Actualizar publicación
+// Actualizar publicación (modificado para subir imagen a Cloudinary)
 const updatePost = async (req, res) => {
   const { id } = req.params
   const { content } = req.body
@@ -267,13 +271,46 @@ const updatePost = async (req, res) => {
       return res.status(404).json({ message: "Publicación no encontrada o no tienes permiso" })
     }
 
-    if (!content || content.trim() === "") {
-      return res.status(400).json({ message: "El contenido no puede estar vacío" })
+    if ((!content || content.trim() === "") && !req.file) {
+      return res.status(400).json({ message: "El contenido no puede estar vacío o debe incluir una imagen" })
     }
 
-    await pool.query("UPDATE posts SET content = ? WHERE id = ?", [content, id])
+    let image = posts[0].image
 
-    res.json({ message: "Publicación actualizada" })
+    if (req.file) {
+      // Subir nueva imagen a Cloudinary desde buffer
+      const uploadFromBuffer = (buffer) =>
+        new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: "Carpeta de fotos" },
+            (error, result) => {
+              if (error) return reject(error)
+              resolve(result)
+            }
+          )
+          stream.end(buffer)
+        })
+
+      const result = await uploadFromBuffer(req.file.buffer)
+
+      // Eliminar imagen anterior si existía
+      if (image) {
+        try {
+          const segments = image.split("/")
+          const filename = segments[segments.length - 1]
+          const publicId = filename.split(".")[0]
+          await cloudinary.uploader.destroy(publicId)
+        } catch (err) {
+          console.error("Error borrando imagen anterior de Cloudinary:", err)
+        }
+      }
+
+      image = result.secure_url
+    }
+
+    await pool.query("UPDATE posts SET content = ?, image = ? WHERE id = ?", [content, image, id])
+
+    res.json({ message: "Publicación actualizada", content, image })
   } catch (error) {
     console.error("Error al actualizar publicación:", error)
     res.status(500).json({ message: "Error interno del servidor" })
@@ -294,18 +331,22 @@ const deletePost = async (req, res) => {
       await conn.rollback()
       return res.status(404).json({ message: "Publicación no encontrada o no tienes permiso" })
     }
+    const image = posts[0].image
 
-    if (posts[0].image) {
-      // Extraer public_id de la URL de Cloudinary
-      const segments = posts[0].image.split("/")
-      const filename = segments[segments.length - 1]
-      const publicId = filename.split(".")[0]
-      await cloudinary.uploader.destroy(publicId).catch((err) => {
-        console.error("Error borrando imagen de Cloudinary:", err)
-      })
-    }
-
+    await conn.query("DELETE FROM comments WHERE post_id = ?", [id])
+    await conn.query("DELETE FROM likes WHERE post_id = ?", [id])
     await conn.query("DELETE FROM posts WHERE id = ?", [id])
+
+    if (image) {
+      try {
+        const segments = image.split("/")
+        const filename = segments[segments.length - 1]
+        const publicId = filename.split(".")[0]
+        await cloudinary.uploader.destroy(publicId)
+      } catch (err) {
+        console.error("Error borrando imagen de Cloudinary:", err)
+      }
+    }
 
     await conn.commit()
     res.json({ message: "Publicación eliminada" })
