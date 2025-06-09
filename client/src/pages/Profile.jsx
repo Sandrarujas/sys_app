@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
-import axiosInstance from "../api/axiosInstances"; 
+import axios from "axios"; 
 import { AuthContext } from "../context/AuthContext";
 import Post from "../components/Post";
 import EditProfileModal from "../components/EditProfileModal";
-
 import styles from "../styles/Profile.module.css";
+
+
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const Profile = () => {
   const { username } = useParams();
@@ -25,11 +27,11 @@ const Profile = () => {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const res = await axiosInstance.get(`/api/users/${encodeURIComponent(username)}`);
+        const res = await axios.get(`${BASE_URL}/api/users/${encodeURIComponent(username)}`);
         setProfile(res.data);
         setIsFollowing(res.data.isFollowing);
 
-        const postsRes = await axiosInstance.get(`/api/posts/user/${encodeURIComponent(username)}`);
+        const postsRes = await axios.get(`${BASE_URL}/api/posts/user/${encodeURIComponent(username)}`);
         setPosts(postsRes.data);
       } catch (error) {
         setError("Error al cargar el perfil");
@@ -45,9 +47,9 @@ const Profile = () => {
   const handleFollow = async () => {
     try {
       if (isFollowing) {
-        await axiosInstance.delete(`/api/users/${profile.id}/unfollow`);
+        await axios.delete(`${BASE_URL}/api/users/${profile.id}/unfollow`);
       } else {
-        await axiosInstance.post(`/api/users/${profile.id}/follow`);
+        await axios.post(`${BASE_URL}/api/users/${profile.id}/follow`);
       }
       setIsFollowing(!isFollowing);
       setProfile((prev) => ({

@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useContext } from "react"
-import axiosInstance from "../api/axiosInstances"
+import axios from "axios"
 import { useAuth } from "../context/AuthContext"
 import { AuthContext } from "../context/AuthContext"
 import Post from "../components/Post"
 import styles from "../styles/Home.module.css"
 
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 const Home = () => {
@@ -28,7 +29,7 @@ const Home = () => {
     const fetchPosts = async () => {
       try {
         setLoading(true)
-        const res = await axiosInstance.get(`/api/posts?page=${page}&limit=5`)
+        const res = await axios.get(`${BASE_URL}/api/posts?page=${page}&limit=5`)
         if (res.data?.posts && Array.isArray(res.data.posts)) {
           setPosts(res.data.posts)
           setPagination(res.data.pagination || pagination)

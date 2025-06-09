@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import axiosInstance from "../api/axiosInstances"
+import axios from "axios"
 import styles from "../styles/EditProfileModal.module.css"
 
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
@@ -43,13 +44,13 @@ const EditProfileModal = ({ isOpen, onClose, profile, onProfileUpdate }) => {
 
     try {
       // Actualizar bio
-      const bioResponse = await axiosInstance.put(`/api/users/bio`, { bio })
+      const bioResponse = await axios.put(`${BASE_URL}/api/users/bio`, { bio })
 
       let imageResponse = null
       if (profileImage) {
         const formData = new FormData()
         formData.append("profileImage", profileImage)
-        imageResponse = await axiosInstance.put(`/api/users/profile-image`, formData, {
+        imageResponse = await axios.put(`${BASE_URL}/api/users/profile-image`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
       }

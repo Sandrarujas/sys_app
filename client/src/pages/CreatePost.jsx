@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import axiosInstance from "../api/axiosInstances"
+import axios from "axios"
 import styles from "../styles/CreatePost.module.css"
 
 
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const CreatePost = ({ onPostCreated }) => {
   const [content, setContent] = useState("")
@@ -46,7 +47,7 @@ const CreatePost = ({ onPostCreated }) => {
       formData.append("content", content)
       if (image) formData.append("image", image)
 
-      const res = await axiosInstance.post(`/api/posts`, formData, {
+      const res = await axios.post(`${BASE_URL}/api/posts`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
 

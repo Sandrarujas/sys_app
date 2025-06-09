@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import axiosInstance from "../api/axiosInstances"
+import axios from "axios"
 import styles from "../styles/Notifications.module.css"
 
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 const Notifications = () => {
@@ -27,8 +28,8 @@ const Notifications = () => {
     const fetchNotifications = async () => {
       try {
         setLoading(true)
-        const res = await axiosInstance.get(
-          `/api/notifications?page=${pagination.page}&limit=${pagination.limit}`
+        const res = await axios.get(
+          `${BASE_URL}/api/notifications?page=${pagination.page}&limit=${pagination.limit}`
         )
         setNotifications(res.data.notifications)
         setPagination(res.data.pagination)
@@ -45,7 +46,7 @@ const Notifications = () => {
 
   const markAsRead = async (id) => {
     try {
-      await axiosInstance.put(`/api/notifications/${id}/read`)
+      await axios.put(`${BASE_URL}/api/notifications/${id}/read`)
       setNotifications(
         notifications.map((notif) =>
           notif.id === id ? { ...notif, isRead: true } : notif
@@ -58,7 +59,7 @@ const Notifications = () => {
 
   const markAllAsRead = async () => {
     try {
-      await axiosInstance.put(`/api/notifications/read-all`)
+      await axios.put(`${BASE_URL}/api/notifications/read-all`)
       setNotifications(notifications.map((notif) => ({ ...notif, isRead: true })))
     } catch (error) {
       console.error("Error al marcar todas las notificaciones:", error)

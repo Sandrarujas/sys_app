@@ -1,9 +1,11 @@
 "use client"
 
 import { createContext, useState, useEffect, useCallback, useContext } from "react"
-import axiosInstance from "../api/axiosInstances"
+import axios from "axios"
 
 export const AuthContext = createContext()
+
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
@@ -22,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setNotificationsLoading(true)
       // axiosInstance ya tiene baseURL, solo pasamos endpoint
-      const res = await axiosInstance.get(`/api/notifications?limit=${limit}`, {
+      const res = await axios.get(`${BASE_URL}/api/notifications?limit=${limit}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -47,11 +49,11 @@ export const AuthProvider = ({ children }) => {
       try {
         // Establecer el token en los headers por defecto de axiosInstance
         axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
-        const res = await axiosInstance.get("/api/auth/me")
+        const res = await axios.get(`${BASE_URL}/api/auth/me`)
         setUser(res.data)
       } catch {
         localStorage.removeItem("token")
-        delete axiosInstance.defaults.headers.common["Authorization"]
+        delete axios.defaults.headers.common["Authorization"]
       } finally {
         setLoading(false)
       }
@@ -70,11 +72,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const res = await axiosInstance.post("/api/auth/login", { email, password })
+      const res = await axios.post(`${BASE_URL}/api/auth/login`, { email, password })
       const { token, user: userData } = res.data
 
       localStorage.setItem("token", token)
-      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`
       setUser(userData)
 
       return { success: true }
@@ -91,14 +93,14 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password) => {
     try {
-      const res = await axiosInstance.post("/api/auth/register", {
+      const res = await axios.post(`${BASE_URL}/api/auth/register`, {
         username,
         email,
         password,
       })
 
       localStorage.setItem("token", res.data.token)
-      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
+      axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
 
       setUser({
         id: res.data.user.id,
@@ -120,7 +122,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem("token")
-    delete axiosInstance.defaults.headers.common["Authorization"]
+    delete axios.defaults.headers.common["Authorization"]
     setUser(null)
     setNotifications([])
     setUnreadCount(0)
@@ -133,7 +135,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = async () => {
     try {
-      const res = await axiosInstance.get("/api/auth/me")
+      const res = await axios.get(`${BASE_URL}/api/auth/me`)
       setUser(res.data)
       return res.data
     } catch (error) {
@@ -143,7 +145,7 @@ export const AuthProvider = ({ children }) => {
 
   const markNotificationAsRead = async (id) => {
     try {
-      await axiosInstance.put(`/api/notifications/${id}/read`)
+      await axios.put(`${BASE_URL}/api/notifications/${id}/read`)
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       )
@@ -155,7 +157,7 @@ export const AuthProvider = ({ children }) => {
 
   const markAllNotificationsAsRead = async () => {
     try {
-      await axiosInstance.put("/api/notifications/read-all")
+      await axios.put(`${BASE_URL}/api/notifications/read-all`)
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
       setUnreadCount(0)
     } catch (error) {
