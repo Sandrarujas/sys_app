@@ -14,8 +14,6 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true })
 }
 
-// Importar la ruta de upload
-const uploadRoutes = require('./routes/upload')
 
 // Configuración de CORS
 app.use(cors({
@@ -69,8 +67,7 @@ app.use("/api/search", require("./routes/search"))
 app.use("/api/notifications", require("./routes/notifications"))
 app.use("/api/admin", require("./routes/admin"))
 
-// Añadir la ruta de subida de imágenes
-app.use("/api", uploadRoutes)
+
 
 // Ruta de salud
 app.get("/health", (req, res) => {
